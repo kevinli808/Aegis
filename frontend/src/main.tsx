@@ -1,14 +1,27 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
+import HomePage from './pages/HomePage'
+import CallPage from './pages/Call'
+import ProtectedLayout from './layouts/ProtectedLayout'
 import { AuthProvider, MongoDBProvider } from './providers'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
       <MongoDBProvider>
-        <App />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<App />}>
+              <Route index element={<HomePage />} />
+              <Route element={<ProtectedLayout />}>
+                <Route path="call" element={<CallPage />} />
+              </Route>
+            </Route>
+          </Routes>
+        </BrowserRouter>
       </MongoDBProvider>
     </AuthProvider>
   </StrictMode>,
