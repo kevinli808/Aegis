@@ -13,11 +13,12 @@ app = FastAPI()
 db = get_db()
 manager = IncidentManager(db)
 
+app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allows all origins for the hackathon
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
-    allow_methods=["*"], # Allows GET, POST, PATCH, etc.
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -257,6 +258,5 @@ async def get_incident_detail(incident_id: str):
 #     for inc in incidents:
 #         inc["_id"] = str(inc["_id"]) # Convert ObjectId to string for JSON
 #     return incidents
-
 
 
