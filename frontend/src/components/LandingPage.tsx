@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { AlertCircle, Info } from 'lucide-react'
+import { Mic, FileText, SirenIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { LiveMap } from './LiveMap'
 import { DisasterUpdates } from './DisasterUpdates'
@@ -81,29 +81,45 @@ export function LandingPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 text-left">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-6 text-left">
         <DisasterUpdates />
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <div className="bg-gray-100 rounded-lg p-3 sm:p-4">
-            <div className="text-2xl sm:text-3xl font-bold text-gray-900">{requests.length}</div>
-            <div className="text-xs sm:text-sm text-gray-600">Total Requests</div>
-          </div>
-          <div className="bg-yellow-100 rounded-lg p-3 sm:p-4">
-            <div className="text-2xl sm:text-3xl font-bold text-yellow-800">{pendingRequests.length}</div>
-            <div className="text-xs sm:text-sm text-yellow-800">Pending</div>
-          </div>
-          <div className="bg-blue-100 rounded-lg p-3 sm:p-4">
-            <div className="text-2xl sm:text-3xl font-bold text-blue-800">{inProgressRequests.length}</div>
-            <div className="text-xs sm:text-sm text-blue-800">In Progress</div>
-          </div>
-          <div className="bg-green-100 rounded-lg p-3 sm:p-4">
-            <div className="text-2xl sm:text-3xl font-bold text-green-800">
-              {requests.filter(r => r.status === 'resolved').length}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="flex-1 sm:flex-[2] bg-red-700 text-white rounded-lg p-6 text-left sm:min-h-[220px]">
+            <div className="flex items-center gap-2 mb-6">
+              <SirenIcon className="w-6 h-6" />
+              <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
             </div>
-            <div className="text-xs sm:text-sm text-green-800">Resolved</div>
+            <p className="text-sm sm:text-base text-red-100 mb-6">Choose how you'd like to submit your help request:</p>
+            <div className="flex flex-col gap-3">
+              <Link
+                to="/request-help?input=voice"
+                className="flex items-center gap-2 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
+              >
+                <Mic className="w-5 h-5 text-white" />
+                <span className="font-semibold">Voice Call</span>
+              </Link>
+              <Link
+                to="/request-help?input=form"
+                className="flex items-center gap-2 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
+              >
+                <FileText className="w-5 h-5 text-white" />
+                <span className="font-semibold">Form</span>
+              </Link>
+            </div>
           </div>
-        </div>
+          <div className="flex flex-col gap-3 sm:gap-4 flex-1">
+            <div className="bg-yellow-100 rounded-lg p-3 sm:p-4 flex-1 flex flex-col justify-center">
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-800">{pendingRequests.length}</div>
+              <div className="text-xs sm:text-sm text-yellow-800">Pending</div>
+            </div>
+            <div className="bg-blue-100 rounded-lg p-3 sm:p-4 flex-1 flex flex-col justify-center">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-800">{inProgressRequests.length}</div>
+              <div className="text-xs sm:text-sm text-blue-800">In Progress</div>
+            </div>
+          </div>
+        </div>  
+
 
         <div className="mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Active Incidents Map</h2>
@@ -115,22 +131,20 @@ export function LandingPage() {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4 sm:gap-6 mb-8 relative z-10">
-          <Link to="/responder" className="bg-blue-600 text-white rounded-xl p-6 hover:bg-blue-700 active:scale-95 transition-all text-left">
-            <h3 className="text-xl sm:text-2xl font-bold mb-2">Responders</h3>
-            <p className="text-sm sm:text-base text-blue-100">View full dashboard</p>
-          </Link>
-
-          <Link to="/request-help" className="bg-red-600 text-white rounded-xl p-6 hover:bg-red-700 active:scale-95 transition-all text-left">
+          <Link to="/request-help" className="bg-red-700 text-white rounded-xl p-6 hover:bg-red-700 active:scale-95 transition-all text-left">
             <div className="flex items-center gap-2 mb-2">
-              <AlertCircle className="w-6 h-6" />
               <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
             </div>
             <p className="text-sm sm:text-base text-red-100">Submit help request</p>
           </Link>
 
-          <Link to="/info" className="bg-gray-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
+          <Link to="/responder" className="bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
+            <h3 className="text-xl sm:text-2xl font-bold mb-2">Responders</h3>
+            <p className="text-sm sm:text-base text-sky-100">View full dashboard</p>
+          </Link>
+
+          <Link to="/info" className="bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
             <div className="flex items-center gap-2 mb-2">
-              <Info className="w-6 h-6" />
               <h3 className="text-xl sm:text-2xl font-bold">Safety Info</h3>
             </div>
             <p className="text-sm sm:text-base text-gray-300">Disaster guidelines</p>

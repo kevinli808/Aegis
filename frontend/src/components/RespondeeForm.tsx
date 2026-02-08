@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MapPin, AlertTriangle, User, MessageSquare, Mic, FileText, Heart } from 'lucide-react';
 import { BackToHomeButton } from './BackToHomeButton';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -68,6 +68,32 @@ const initialFormData: FormData = {
   numberOfPeople: '1',
 };
 
+/** Map province/state names to Canadian province codes */
+const PROVINCE_NAME_TO_CODE: Record<string, string> = {
+  'alberta': 'AB', 'british columbia': 'BC', 'bc': 'BC', 'manitoba': 'MB', 'mb': 'MB',
+  'new brunswick': 'NB', 'nb': 'NB', 'newfoundland and labrador': 'NL', 'nl': 'NL',
+  'nova scotia': 'NS', 'ns': 'NS', 'ontario': 'ON', 'on': 'ON', 'prince edward island': 'PE', 'pe': 'PE',
+  'quebec': 'QC', 'qc': 'QC', 'québec': 'QC', 'saskatchewan': 'SK', 'sk': 'SK',
+  'northwest territories': 'NT', 'nt': 'NT', 'nunavut': 'NU', 'nu': 'NU', 'yukon': 'YT', 'yt': 'YT',
+};
+
+/** Reverse geocode lat/lng to get address details via Nominatim */
+async function reverseGeocode(lat: number, lng: number): Promise<{ city: string; province: string; postalCode: string; location: string }> {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+    { headers: { 'Accept-Language': 'en', 'User-Agent': 'AegisEmergencyApp/1.0' } }
+  );
+  if (!res.ok) throw new Error('Geocoding failed');
+  const data = await res.json();
+  const addr = data.address ?? {};
+  const city = addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? addr.county ?? '';
+  const stateRaw = (addr.state ?? addr.province ?? '').toString().toLowerCase();
+  const province = PROVINCE_NAME_TO_CODE[stateRaw] ?? addr.state ?? addr.province ?? '';
+  const postalCode = addr.postcode ?? '';
+  const location = data.display_name ?? `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  return { city, province, postalCode, location };
+}
+
 /** Extract form fields from voice call transcript */
 function parseTranscriptToFormData(transcript: string[]): Partial<FormData> {
   const fullText = transcript.join(' ').toLowerCase()
@@ -121,11 +147,24 @@ function parseTranscriptToFormData(transcript: string[]): Partial<FormData> {
 
 export function RespondeeForm() {
   const navigate = useNavigate();
-  const [showInputChoice, setShowInputChoice] = useState<boolean>(true);
-  const [showVoiceCall, setShowVoiceCall] = useState<boolean>(false);
+  const [searchParams] = useSearchParams();
+  const inputParam = searchParams.get('input');
+  const [showInputChoice, setShowInputChoice] = useState<boolean>(inputParam !== 'voice' && inputParam !== 'form');
+  const [showVoiceCall, setShowVoiceCall] = useState<boolean>(inputParam === 'voice');
+
+  useEffect(() => {
+    if (inputParam === 'voice') {
+      setShowInputChoice(false);
+      setShowVoiceCall(true);
+    } else if (inputParam === 'form') {
+      setShowInputChoice(false);
+      setShowVoiceCall(false);
+    }
+  }, [inputParam]);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
+  const [isLocationLoading, setIsLocationLoading] = useState<boolean>(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -137,25 +176,48 @@ export function RespondeeForm() {
     }));
   };
 
-  const getCurrentLocation = () => {
+  const updateLocationFromCoords = useCallback(async (lat: number, lng: number) => {
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat.toString(),
+      longitude: lng.toString(),
+      location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+    }));
+    try {
+      const { city, province, postalCode, location } = await reverseGeocode(lat, lng);
+      setFormData(prev => ({
+        ...prev,
+        latitude: lat.toString(),
+        longitude: lng.toString(),
+        location: location || `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+        city: city || prev.city,
+        province: province || prev.province,
+        postalCode: postalCode || prev.postalCode,
+      }));
+    } catch {
+      setFormData(prev => ({
+        ...prev,
+        latitude: lat.toString(),
+        longitude: lng.toString(),
+        location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      }));
+    }
+  }, []);
+
+  const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
       return;
     }
-
+    setIsLocationLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setFormData(prev => ({
-          ...prev,
-          latitude: position.coords.latitude.toString(),
-          longitude: position.coords.longitude.toString(),
-          location: `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`
-        }));
+        updateLocationFromCoords(position.coords.latitude, position.coords.longitude).finally(() => setIsLocationLoading(false));
       },
       (error: GeolocationPositionError) => {
+        setIsLocationLoading(false);
         console.error('Error getting location:', error);
         let errorMessage = 'Unable to get your location. ';
-        
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage += 'Please allow location access in your browser settings.';
@@ -169,16 +231,11 @@ export function RespondeeForm() {
           default:
             errorMessage += 'Please enter your location manually.';
         }
-        
         alert(errorMessage);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  };
+  }, [updateLocationFromCoords]);
 
   const handleGetHelp = () => {
     setShowInputChoice(true);
@@ -282,7 +339,7 @@ export function RespondeeForm() {
         <div className="w-full max-w-7xl">
           <BackToHomeButton className="mb-6" />
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Request Assistance</h1>
-          <p className="text-gray-600 text-sm sm:text-base">Choose how you'd like to submit your request</p>
+          <p className="text-gray-600 text-sm sm:text-base mb-2">Choose how you'd like to submit your request</p>
         </div>
         <div className="flex-1 flex items-center justify-center w-full max-w-7xl sm:flex-initial sm:items-stretch sm:justify-start">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl sm:max-w-none">
@@ -293,7 +350,7 @@ export function RespondeeForm() {
             >
               <Mic className="w-12 h-12 sm:w-14 sm:h-14" />
               <span className="text-xl sm:text-2xl font-bold">Input by voice</span>
-              <span className="text-sm text-blue-100">Speak to our AI assistant to submit your request</span>
+              <span className="text-sm text-slate-200">Speak to our AI assistant to submit your request</span>
             </button>
             <button
               type="button"
@@ -312,23 +369,24 @@ export function RespondeeForm() {
 
   if (showVoiceCall) {
     return (
-      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col">
-        <div className="w-full max-w-7xl shrink-0">
-          <BackToHomeButton className="mb-4" />
-            <VoiceCall
-              title="Aegis Assistant"
-              embedded
-              onBack={() => { setShowVoiceCall(false); setShowInputChoice(true); }}
-              onLocationUpdate={(lat: string, lng: string, location: string) => {
-                setFormData(prev => ({
-                  ...prev,
-                  latitude: lat,
-                  longitude: lng,
-                  location,
-                }))
-              }}
-              onCallEnd={handleCallEnd}
-            />
+      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center">
+        <div className="w-full max-w-7xl py-4 sm:py-6 text-left">
+          <div className="mb-4 sm:mb-6">
+            <BackToHomeButton className="mb-2 sm:mb-3" />
+          </div>
+          <VoiceCall
+            title="Request Emergency Help"
+            embedded
+            onBack={() => { setShowVoiceCall(false); setShowInputChoice(true); }}
+            onLocationUpdate={(lat: string, lng: string) => {
+              const latNum = parseFloat(lat);
+              const lngNum = parseFloat(lng);
+              if (!isNaN(latNum) && !isNaN(lngNum)) {
+                updateLocationFromCoords(latNum, lngNum);
+              }
+            }}
+            onCallEnd={handleCallEnd}
+          />
         </div>
       </div>
     );
@@ -374,7 +432,7 @@ export function RespondeeForm() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="Your name"
                 />
               </div>
@@ -386,7 +444,7 @@ export function RespondeeForm() {
                   value={formData.phone}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="Your contact number"
                 />
               </div>
@@ -398,7 +456,7 @@ export function RespondeeForm() {
                   value={formData.numberOfPeople}
                   onChange={handleChange}
                   min="1"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -411,13 +469,25 @@ export function RespondeeForm() {
             </h2>
             <div className="space-y-3">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Use my location</label>
+                <button
+                  type="button"
+                  onClick={getCurrentLocation}
+                  disabled={isLocationLoading}
+                  className="w-max bg-slate-700 text-white px-3 py-2 rounded-lg hover:bg-slate-800 active:scale-95 transition-all font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLocationLoading ? 'Getting location…' : '📍 Use GPS to auto-fill address'}
+                </button>
+                <p className="text-xs text-gray-500 mt-1">Auto-fills city, province, and postal code</p>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Street Address <span className="text-gray-400 font-normal">(optional if using GPS)</span></label>
                 <input
                   type="text"
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="123 Main Street, Apt 4B"
                 />
               </div>
@@ -429,7 +499,7 @@ export function RespondeeForm() {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                     placeholder="Vancouver"
                   />
                 </div>
@@ -439,7 +509,7 @@ export function RespondeeForm() {
                     name="province"
                     value={formData.province}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   >
                     <option value="">Select Province</option>
                     <option value="AB">Alberta</option>
@@ -465,19 +535,12 @@ export function RespondeeForm() {
                   name="postalCode"
                   value={formData.postalCode}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="A1A 1A1"
                   maxLength={7}
                 />
                 <p className="text-xs text-gray-500 mt-1">Format: A1A 1A1</p>
               </div>
-              <button
-                type="button"
-                onClick={getCurrentLocation}
-                className="w-full sm:w-auto bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 active:scale-95 transition-all font-medium text-sm"
-              >
-                📍 Capture GPS Coordinates
-              </button>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
@@ -486,7 +549,7 @@ export function RespondeeForm() {
                     name="latitude"
                     value={formData.latitude}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-gray-50"
                     placeholder="Auto-filled"
                     readOnly
                   />
@@ -498,7 +561,7 @@ export function RespondeeForm() {
                     name="longitude"
                     value={formData.longitude}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-gray-50"
                     placeholder="Auto-filled"
                     readOnly
                   />
@@ -521,7 +584,7 @@ export function RespondeeForm() {
                   onChange={handleChange}
                   required
                   rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="What is happening? What help do you need?"
                 />
               </div>
@@ -532,7 +595,7 @@ export function RespondeeForm() {
                   value={formData.medicalConditions}
                   onChange={handleChange}
                   rows={2}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="e.g., bleeding, unconscious, difficulty breathing"
                 />
               </div>
@@ -542,7 +605,7 @@ export function RespondeeForm() {
                   name="immediacy"
                   value={formData.immediacy}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                 >
                   <option value="low">Stable - Not escalating</option>
                   <option value="moderate">Moderate - Could worsen soon</option>
@@ -557,7 +620,7 @@ export function RespondeeForm() {
                   name="environmentalHazards"
                   value={formData.environmentalHazards}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="e.g., flood depth 3ft, near wildfire, structural damage"
                 />
               </div>
@@ -576,7 +639,7 @@ export function RespondeeForm() {
                   name="isChild"
                   checked={formData.isChild}
                   onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-5 h-5 text-slate-700 rounded focus:ring-2 focus:ring-slate-500"
                 />
                 <span className="text-gray-700 text-sm sm:text-base">Children present (under 18)</span>
               </label>
@@ -586,7 +649,7 @@ export function RespondeeForm() {
                   name="hasMobilityLimitations"
                   checked={formData.hasMobilityLimitations}
                   onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-5 h-5 text-slate-700 rounded focus:ring-2 focus:ring-slate-500"
                 />
                 <span className="text-gray-700 text-sm sm:text-base">Mobility limitations or disabilities</span>
               </label>
@@ -596,18 +659,18 @@ export function RespondeeForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full bg-slate-700 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Help Request'}
           </button>
         </form>
 
-        <div className="mt-4 sm:mt-6 bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4">
-          <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-base sm:text-lg">
+        <div className="mt-4 sm:mt-6 bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4">
+          <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-base sm:text-lg">
             <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
             Crisis Tips While You Wait
           </h3>
-          <ul className="space-y-2 text-xs sm:text-sm text-blue-900">
+          <ul className="space-y-2 text-xs sm:text-sm text-slate-700\">
             <li>• Stay calm and find a safe location if possible</li>
             <li>• Keep your phone charged and accessible</li>
             <li>• If injured, apply pressure to stop bleeding and avoid moving</li>
