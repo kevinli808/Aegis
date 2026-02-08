@@ -396,6 +396,20 @@ export function RespondeeForm() {
 
       if (!response.ok) throw new Error("Network response was not ok");
 
+      if (data.success) {
+        let message = `Help request submitted successfully!\n\nRequest ID: ${data.requestId}\nPriority Score: ${data.priorityScore}`;
+        
+        if (data.coordinates) {
+          message += `\n\nYour location has been mapped and responders can see your position.`;
+        } else {
+          message += `\n\nYour address has been recorded. Responders will contact you at ${formData.phone}.`;
+        }
+        
+        alert(message);
+        navigate('/gemini-chat', { state: { formData } });
+      } else {
+        alert('Failed to submit request. Please try again.');
+      }
       await response.json();
       setSubmitSuccess(true);
       navigate("/");
