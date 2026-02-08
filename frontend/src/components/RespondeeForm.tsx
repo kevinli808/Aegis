@@ -620,6 +620,9 @@ export function RespondeeForm() {
           </p>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl space-y-4 mt-6">
+          <p className="text-sm text-gray-500">
+            <span className="text-red-600">*</span> Required
+          </p>
           <div className="border p-5 border-gray-300 rounded-lg">
             <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <User className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -628,7 +631,7 @@ export function RespondeeForm() {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
+                  Name <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -651,7 +654,7 @@ export function RespondeeForm() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
+                  Phone Number <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="tel"
@@ -706,7 +709,7 @@ export function RespondeeForm() {
           <div className="border p-5 border-gray-300 rounded-lg">
             <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
-              Location
+              Location <span className="text-red-600">*</span>
             </h2>
             <div className="space-y-3">
               <div>
@@ -848,7 +851,7 @@ export function RespondeeForm() {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Describe Your Situation
+                  Describe Your Situation <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   name="situation"

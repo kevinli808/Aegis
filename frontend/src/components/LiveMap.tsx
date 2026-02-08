@@ -211,9 +211,6 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest, centerOnUs
           <p style="margin: 8px 0; font-size: 14px; color: #374151; max-width: 250px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
             <strong>Situation:</strong> ${request.situation}
           </p>
-          <button type="button" data-request-id="${request.id}" class="live-map-view-details" style="margin-top: 8px; background-color: #2563eb; color: white; padding: 6px 12px; border: 2px solid #dbeafe; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%;">
-            View Full Details
-          </button>
         </div>
       `)
 
@@ -232,24 +229,6 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest, centerOnUs
       mapRef.current.fitBounds(bounds as any, { padding: [50, 50], maxZoom: 15 })
     }
   }, [requests, onSelectRequest, userLocation])
-
-  // Event delegation for "View Full Details" button (popup content is in Leaflet's DOM)
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const btn = (e.target as HTMLElement).closest('.live-map-view-details, [data-request-id]')
-      if (btn) {
-        e.preventDefault()
-        e.stopPropagation()
-        const id = btn.getAttribute('data-request-id')
-        if (id) {
-          const request = requests.find(r => r.id === id)
-          if (request) onSelectRequest(request)
-        }
-      }
-    }
-    document.addEventListener('click', handleClick, true)
-    return () => document.removeEventListener('click', handleClick, true)
-  }, [requests, onSelectRequest])
 
   useEffect(() => {
     if (!mapRef.current || !selectedRequest) return
