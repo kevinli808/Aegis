@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield, AlertCircle } from 'lucide-react'
+import { Navbar } from './Navbar'
 import { LiveMap } from './LiveMap'
 import { API_BASE } from '../config'
 
@@ -80,10 +81,12 @@ export function IndexChoice() {
   const activeRequests = requests.filter(r => r.status !== 'resolved')
 
   return (
-    <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center justify-center">
-      <div className="w-full max-w-7xl text-center ">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Aegis</h1>
-        <p className="text-gray-600 text-sm sm:text-base mb-6">Help when it matters.</p>
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col items-center">
+      <div className="w-full max-w-7xl text-center">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Help when it matters</h1>
+        <p className="text-gray-600 text-sm sm:text-base mb-6">Choose how you'd like to get started</p>
 
         {/* Map */}
         <div className="mb-6">
@@ -120,6 +123,7 @@ export function IndexChoice() {
             <span className="text-sm text-slate-200">View incidents and provide assistance</span>
           </Link>
         </div>
+      </div>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Send, Loader, Home } from 'lucide-react';
+import { Send, Loader } from 'lucide-react';
+import { Navbar } from '../components/Navbar';
 import { API_BASE } from '../config';
 
 interface FormData {
@@ -144,23 +145,12 @@ export default function GeminiChatPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-slate-900 text-white py-4 sm:py-6">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl sm:text-3xl font-bold">Emergency Support Chat</h1>
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2 border-2 border-slate-100 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors"
-            >
-              <Home className="w-4 h-4" />
-              <span className="text-sm">Home</span>
-            </button>
-          </div>
-          <p className="text-gray-300 text-sm">
-            Chat with an AI assistant for tailored guidance on your situation
-          </p>
-        </div>
+      <Navbar />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800">Emergency Support Chat</h1>
+        <p className="text-gray-500 text-sm">
+          Chat with an AI assistant for tailored guidance on your situation
+        </p>
       </div>
 
       {/* Help Request Summary */}

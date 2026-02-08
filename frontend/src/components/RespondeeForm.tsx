@@ -9,7 +9,7 @@ import {
   FileText,
   Heart,
 } from "lucide-react";
-import { BackToHomeButton } from "./BackToHomeButton";
+import { Navbar } from "./Navbar";
 import { API_BASE } from "../config";
 import { useToast } from "./Toast";
 import { VoiceCall } from "./VoiceCall";
@@ -491,17 +491,16 @@ export function RespondeeForm() {
 
   if (showInputChoice) {
     return (
-      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center">
-        <div className="w-full max-w-7xl">
-          <BackToHomeButton className="mb-6" />
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+      <div className="min-h-screen bg-[#F8FAFC]">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
             Request Assistance
           </h1>
-          <p className="text-gray-600 text-sm sm:text-base mb-0 md:mb-4">
+          <p className="text-gray-600 text-sm sm:text-base mb-6">
             Choose how you'd like to submit your request
           </p>
-        </div>
-        <div className="flex-1 flex items-center justify-center w-full max-w-7xl sm:flex-initial sm:items-stretch sm:justify-start">
+        <div className="flex items-center justify-center w-full sm:items-stretch sm:justify-start">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl sm:max-w-none">
             <button
               type="button"
@@ -531,17 +530,16 @@ export function RespondeeForm() {
             </button>
           </div>
         </div>
+        </div>
       </div>
     );
   }
 
   if (showVoiceCall) {
     return (
-      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center">
-        <div className="w-full max-w-7xl py-4 sm:py-6 text-left">
-          <div className="mb-4 sm:mb-6">
-            <BackToHomeButton className="mb-2 sm:mb-3" />
-          </div>
+      <div className="min-h-screen bg-[#F8FAFC]">
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <VoiceCall
             title="Request Emergency Help"
             embedded
@@ -565,7 +563,9 @@ export function RespondeeForm() {
 
   if (submitSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-[#F8FAFC]">
+        <Navbar />
+      <div className="flex items-center justify-center py-12">
         <div className="bg-white rounded-2xl p-12 text-left sm:text-center max-w-xl">
           <div className="w-16 h-16 bg-green-500 rounded-full mx-auto mb-4 flex items-center justify-center">
             <svg
@@ -590,15 +590,15 @@ export function RespondeeForm() {
           </p>
         </div>
       </div>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center">
-      <div className="w-full max-w-7xl py-4 sm:py-6 text-left">
-        <div className="mb-4 sm:mb-6">
-          <BackToHomeButton className="mb-2 sm:mb-3" />
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
             Request Emergency Help
           </h1>
           <p className="text-gray-600 text-sm sm:text-base">
@@ -606,9 +606,8 @@ export function RespondeeForm() {
             system will prioritize your request based on urgency and dispatch
             help as quickly as possible.
           </p>
-        </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl space-y-4 mt-6">
           <div className="border p-5 border-gray-300 rounded-lg">
             <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <User className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -937,7 +936,7 @@ export function RespondeeForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full border-2 border-slate-100 bg-slate-700 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg"
+            className="w-full border-2 border-slate-100 bg-slate-700 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Submitting..." : "Submit Help Request"}
           </button>

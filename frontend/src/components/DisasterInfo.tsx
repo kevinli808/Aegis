@@ -1,23 +1,15 @@
-import { Link } from 'react-router-dom';
 import { AlertTriangle, Flame, Droplets, Wind, Home, Heart, Phone } from 'lucide-react';
-import { BackToHomeButton } from './BackToHomeButton';
+import { Navbar } from './Navbar';
 import { Footer } from './Footer';
+import { Link } from 'react-router-dom';
 
 export function DisasterInfo() {
   return (
     <div className="min-h-screen bg-white">
-      <div className="bg-slate-900 text-white py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-left">
-          <BackToHomeButton className="mb-3 text-sky-300 hover:text-white border-slate-600 hover:bg-slate-700" />
-          <Link to="/" className="flex items-center gap-3 text-white hover:text-white/90">
-            <h1 className="text-4xl sm:text-5xl font-bold">Aegis</h1>
-            <img src="/aegis-logo.png" alt="Aegis" className="w-10 h-10 sm:w-12 sm:h-12" />
-          </Link>
-          <p className="text-lg sm:text-xl text-gray-300 mt-2">Disaster Safety Information</p>
-        </div>
-      </div>
-
+      <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Disaster Safety Information</h1>
+        <p className="text-gray-600 mb-8">Essential tips and information for various emergency situations</p>
 
         {/* Emergency Numbers */}
         <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-8">
@@ -32,7 +24,7 @@ export function DisasterInfo() {
             </div>
             <div className="bg-white rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-1">Poison Control</p>
-              <p className="text-2xl font-bold text-red-600">1-800-222-1222</p>
+              <p className="text-2xl font-bold text-red-600">1-800-567-8911</p>
             </div>
             <div className="bg-white rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-1">Crisis Hotline</p>
@@ -235,7 +227,7 @@ export function DisasterInfo() {
         {/* Bottom CTA */}
         <div className="mt-8 bg-blue-600 rounded-xl p-8 text-center text-white">
           <h2 className="text-2xl font-bold mb-3">Need Immediate Help?</h2>
-          <p className="mb-6">If you're experiencing an emergency, submit a help request now.</p>
+          <p>If you're experiencing an emergency, submit a help request now.</p>
           <Link
             to="/request-help"
             className="inline-block border-2 border-blue-100 bg-white text-blue-600 px-8 py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors"

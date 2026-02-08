@@ -38,7 +38,7 @@ export function Drawer({
           />
           <motion.div
             key="drawer-panel"
-            className={`fixed inset-x-0 bottom-0 z-[1210] bg-white rounded-t-2xl shadow-2xl max-h-[85dvh] flex flex-col touch-pan-y ${mobileOnly ? "lg:hidden" : ""}`}
+            className={`fixed inset-x-0 bottom-0 z-[1210] bg-white rounded-t-2xl max-h-[85dvh] flex flex-col touch-pan-y ${mobileOnly ? "lg:hidden" : ""}`}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}

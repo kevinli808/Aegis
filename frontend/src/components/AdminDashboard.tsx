@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, Trash2, AlertTriangle, Info as InfoIcon, AlertCircle } from 'lucide-react';
-import { BackToHomeButton } from './BackToHomeButton';
+import { Link } from 'react-router-dom';
+import { Navbar } from './Navbar';
 import { API_BASE } from '../config';
 import { useToast } from './Toast';
 import { useConfirm } from './ConfirmModal';
@@ -266,25 +267,21 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <BackToHomeButton className="mb-3" />
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-sm text-gray-600">Welcome, {adminUser.user_metadata?.name || adminUser.email}</p>
-            </div>
-            <button
-              onClick={logout}
-              className="border-2 border-gray-100 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
+      <Navbar
+        rightContent={
+          <button
+            onClick={logout}
+            className="border-2 border-sky-100 bg-sky-600 text-white px-4 py-2 rounded-lg hover:bg-sky-700 transition-colors text-sm font-medium"
+          >
+            Logout
+          </button>
+        }
+      />
       <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-sm text-gray-600">Welcome, {adminUser.user_metadata?.name || adminUser.email}</p>
+        </div>
         <div className="grid lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Post Disaster Update</h2>

@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const toastEl = message ? (
     <div
-      className="fixed bottom-4 right-4 z-[9999] px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium"
+      className="fixed bottom-4 right-4 z-[9999] px-4 py-3 rounded-xl text-white text-sm font-medium"
       style={{
         background:
           type === 'success'

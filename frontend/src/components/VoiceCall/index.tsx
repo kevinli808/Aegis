@@ -221,6 +221,12 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded: _embedded = false
       setError('VITE_ELEVENLABS_AGENT_ID is not set. Add it to .env')
       return
     }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError(
+        'Microphone access requires HTTPS. This page is being served over HTTP—please use https:// to access it. Browsers block microphone access on insecure connections.'
+      )
+      return
+    }
     setError(null)
     setStatus('connecting')
     try {
@@ -282,6 +288,11 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded: _embedded = false
 
         {/* Main content - single box */}
         <div className="bg-white rounded-xl border border-gray-300 p-5 sm:p-6 space-y-4">
+        {!navigator.mediaDevices?.getUserMedia && (
+          <div className="p-4 rounded-lg bg-amber-50 text-sm text-amber-800">
+            <strong>Microphone access unavailable.</strong> Voice calls require HTTPS. This page is served over HTTP—access it via <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs font-mono">https://</code> or set up SSL on your server.
+          </div>
+        )}
         {!AGENT_ID && (
           <div className="p-4 rounded-lg bg-amber-50 text-sm text-amber-800">
             Set <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs font-mono">VITE_ELEVENLABS_AGENT_ID</code> in{' '}
@@ -342,7 +353,7 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded: _embedded = false
               type="button"
               className="w-full max-w-7xl py-3 px-4 rounded-lg font-bold text-base border-2 border-slate-100 bg-slate-700 text-white hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
               onClick={startCall}
-              disabled={!AGENT_ID}
+              disabled={!AGENT_ID || !navigator.mediaDevices?.getUserMedia}
             >
               Start call
             </button>

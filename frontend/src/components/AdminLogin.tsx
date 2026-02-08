@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Lock, Mail, User } from 'lucide-react';
-import { BackToHomeButton } from './BackToHomeButton';
+import { Navbar } from './Navbar';
 import { useToast } from './Toast';
 import { API_BASE } from '../config';
 
@@ -54,11 +54,11 @@ export function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center">
-      <div className="w-full max-w-md">
-        <BackToHomeButton className="mb-6" />
-
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Aegis</h1>
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col items-center">
+        <div className="w-full max-w-md">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Login</h1>
         <p className="text-gray-600 text-sm sm:text-base mb-6">Admin access for first responders</p>
 
         <div className="bg-white rounded-xl border border-gray-300 p-6 sm:p-8">
@@ -170,6 +170,7 @@ export function AdminLogin() {
               Quick login: admin / adminadmin
             </p>
           </div>
+        </div>
         </div>
       </div>
     </div>

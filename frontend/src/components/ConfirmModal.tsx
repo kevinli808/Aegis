@@ -67,7 +67,7 @@ export function ConfirmModalProvider({ children }: { children: ReactNode }) {
         onClick={handleBackdropClick}
       >
         <div
-          className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+          className="w-full max-w-md rounded-xl bg-white p-6"
           onClick={(e) => e.stopPropagation()}
         >
           <p className="text-gray-800 whitespace-pre-wrap">{state.message}</p>
