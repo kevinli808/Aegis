@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, AlertTriangle, User, Phone, MessageSquare, Mic } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+// import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 export function RespondeeForm() {
   const navigate = useNavigate();
@@ -81,84 +81,142 @@ export function RespondeeForm() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      const payload = {
-        name: formData.name,
-        phone: formData.phone,
-        location: formData.location,
-        city: formData.city,
-        province: formData.province,
-        postalCode: formData.postalCode,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
-        situation: formData.situation,
-        medicalConditions: formData.medicalConditions,
-        immediacy: formData.immediacy,
-        isChild: formData.isChild,
-        hasMobilityLimitations: formData.hasMobilityLimitations,
-        environmentalHazards: formData.environmentalHazards,
-        numberOfPeople: formData.numberOfPeople,
-      };
-
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/submit-request`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to submit request: ${errorText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        let message = `Help request submitted successfully!\n\nRequest ID: ${data.requestId}\nPriority Score: ${data.priorityScore}`;
-        
-        if (data.coordinates) {
-          message += `\n\nYour location has been mapped and responders can see your position.`;
-        } else {
-          message += `\n\nYour address has been recorded. Responders will contact you at ${formData.phone}.`;
-        }
-        
-        alert(message);
-        navigate('/');
-      } else {
-        alert('Failed to submit request. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error submitting help request:', error);
-      alert('Failed to submit request. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (submitSuccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center max-w-md">
-          <div className="w-16 h-16 bg-green-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted</h2>
-          <p className="text-gray-600">Help is on the way. Responders have been notified of your request.</p>
-        </div>
-      </div>
-    );
+  // 1. Prepare the payload to match the BaseModel above
+  const payload = {
+  type: formData.situation,          // Backend expects 'type'
+  num_people: Number(formData.numberOfPeople), // Backend expects an integer
+  symptoms: formData.medicalConditions ? [formData.medicalConditions] : [], // Backend expects a List/Array
+  safety_status: formData.immediacy, // Backend expects 'safety_status'
+  location: {
+    type: "Point",
+    coordinates: [
+      parseFloat(formData.longitude) || 0, 
+      parseFloat(formData.latitude) || 0
+    ]
   }
+};
+
+  try {
+    // 2. Send to your local FastAPI server
+    const response = await fetch('http://localhost:8000/report', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // This is the ONLY one you need
+      },
+      body: JSON.stringify(payload),
+    });
+
+    console.log("Response Status:", response.status);
+    response.headers.forEach((value, name) => {
+      console.log(`${name}: ${value}`);
+    });
+    
+
+    // 3. Handle the response
+    if (response.status === 422) {
+      const errorDetail = await response.json();
+      console.error("Validation Error:", errorDetail);
+      alert("Format error: Check the console to see which field failed.");
+      return;
+    }
+
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    const result = await response.json();
+    console.log("Success:", result);
+    setSubmitSuccess(true);
+    navigate('/');
+
+  } catch (error) {
+    console.error('Submit error:', error);
+    alert('Failed to connect to backend.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setIsSubmitting(true);
+
+  //   try {
+  //     const payload = {
+  //       name: formData.name,
+  //       phone: formData.phone,
+  //       location: formData.location,
+  //       city: formData.city,
+  //       province: formData.province,
+  //       postalCode: formData.postalCode,
+  //       latitude: formData.latitude,
+  //       longitude: formData.longitude,
+  //       situation: formData.situation,
+  //       medicalConditions: formData.medicalConditions,
+  //       immediacy: formData.immediacy,
+  //       isChild: formData.isChild,
+  //       hasMobilityLimitations: formData.hasMobilityLimitations,
+  //       environmentalHazards: formData.environmentalHazards,
+  //       numberOfPeople: formData.numberOfPeople,
+  //     };
+
+  //     const response = await fetch(
+  //       `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/submit-request`,
+  //       {
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': `Bearer ${publicAnonKey}`,
+  //         },
+  //         body: JSON.stringify(payload),
+  //       }
+  //     );
+
+  //     if (!response.ok) {
+  //       const errorText = await response.text();
+  //       throw new Error(`Failed to submit request: ${errorText}`);
+  //     }
+
+  //     const data = await response.json();
+
+  //     if (data.success) {
+  //       let message = `Help request submitted successfully!\n\nRequest ID: ${data.requestId}\nPriority Score: ${data.priorityScore}`;
+        
+  //       if (data.coordinates) {
+  //         message += `\n\nYour location has been mapped and responders can see your position.`;
+  //       } else {
+  //         message += `\n\nYour address has been recorded. Responders will contact you at ${formData.phone}.`;
+  //       }
+        
+  //       alert(message);
+  //       navigate('/');
+  //     } else {
+  //       alert('Failed to submit request. Please try again.');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error submitting help request:', error);
+  //     alert('Failed to submit request. Please try again.');
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
+  // if (submitSuccess) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
+  //       <div className="bg-white rounded-2xl shadow-xl p-12 text-center max-w-md">
+  //         <div className="w-16 h-16 bg-green-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+  //           <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  //             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  //           </svg>
+  //         </div>
+  //         <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted</h2>
+  //         <p className="text-gray-600">Help is on the way. Responders have been notified of your request.</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
