@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Conversation } from '@elevenlabs/client'
-import { ArrowLeft } from 'lucide-react'
 
 const AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID ?? ''
 
@@ -270,34 +269,21 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
   }, [conversation])
 
   return (
-    <div className="flex flex-col w-full pb-24 sm:pb-0">
-      {/* Header */}
-      <header className="mb-4 sm:mb-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{title}</h1>
-            <p className="text-gray-600 text-sm sm:text-base">
-              Describe your situation. We'll collect your info and share your location with responders automatically.
-            </p>
-          </div>
-          {embedded && onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              className="shrink-0 inline-flex items-center gap-2 text-sky-600 hover:text-sky-800 hover:bg-gray-100 rounded-lg px-2 py-1.5 -mx-2 -my-1.5 transition-colors text-sm"
-              aria-label="Go back"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </button>
-          )}
-        </div>
-      </header>
+    <div className="flex flex-col lg:grid lg:grid-cols-[1fr,minmax(280px,380px)] lg:gap-8 lg:items-start w-full pb-24">
+      {/* Left column: header + main call card */}
+      <div className="flex flex-col w-full min-w-0">
+        {/* Header */}
+        <header className="mb-4 sm:mb-6">
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{title}</h1>
+          <p className="text-gray-600 text-sm sm:text-base">
+            Describe your situation. We'll collect your info and share your location with responders automatically.
+          </p>
+        </header>
 
-      {/* Main content - card styled like form sections */}
-      <div className="bg-white rounded-xl space-y-4">
+        {/* Main content - single box */}
+        <div className="bg-white rounded-xl border border-gray-300 p-5 sm:p-6 space-y-4">
         {!AGENT_ID && (
-          <div className="border p-5 border-gray-300 rounded-lg bg-amber-50 text-sm text-amber-800">
+          <div className="p-4 rounded-lg bg-amber-50 text-sm text-amber-800">
             Set <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs font-mono">VITE_ELEVENLABS_AGENT_ID</code> in{' '}
             <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs font-mono">.env</code> — get it from the{' '}
             <a href="https://elevenlabs.io/app/conversational-ai" target="_blank" rel="noreferrer" className="underline font-medium">
@@ -308,13 +294,13 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
         )}
 
         {error && (
-          <div className="border p-5 border-gray-300 rounded-lg bg-red-50 text-red-700 text-sm">
+          <div className="p-4 rounded-lg bg-red-50 text-red-700 text-sm">
             {error}
           </div>
         )}
 
         {status === 'connecting' && (
-          <div className="border p-5 border-gray-300 rounded-lg flex flex-col items-center justify-center gap-4 py-8 sm:py-12">
+          <div className="flex flex-col items-center justify-center gap-4 py-8 sm:py-12">
             <div className="w-14 h-14 rounded-full bg-slate-600 animate-pulse" />
             <p className="m-0 text-sm font-medium text-gray-700">Connecting…</p>
             <p className="m-0 text-xs text-gray-600">Allow microphone when prompted</p>
@@ -322,14 +308,18 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
         )}
 
         {status === 'connected' && (
-          <div className="border p-5 border-gray-300 rounded-lg space-y-4">
+          <div className="space-y-4">
             {locationStatus && (
               <p className="text-sm text-gray-600 flex items-center gap-1.5">
                 <span>📍</span> {locationStatus}
               </p>
             )}
-            <div className="w-full rounded-lg overflow-hidden bg-slate-900 border border-gray-300 aspect-2/1 min-h-[200px]">
-              <SynthwaveVisualizer conversation={conversation} mode={mode} />
+            <div className="w-full rounded-lg overflow-hidden bg-slate-900 aspect-2/1 min-h-[200px] flex items-center justify-center">
+              {conversation ? (
+                <SynthwaveVisualizer conversation={conversation} mode={mode} />
+              ) : (
+                <p className="text-slate-400 text-sm">Waiting for audio…</p>
+              )}
             </div>
             <p className="text-sm font-medium text-gray-700">
               {mode === 'agent-speaking' && 'Agent speaking…'}
@@ -339,12 +329,12 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
           </div>
         )}
 
-        {/* Call button - fixed at bottom on mobile */}
-        <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-300 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:static sm:border-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:flex sm:justify-start">
+        {/* Call button - always fixed at bottom */}
+        <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-300 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] flex justify-center">
           {status === 'idle' && (
             <button
               type="button"
-              className="w-full sm:w-auto min-w-[200px] py-3 px-4 rounded-lg font-bold text-base bg-slate-700 text-white hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full max-w-7xl py-3 px-4 rounded-lg font-bold text-base bg-slate-700 text-white hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
               onClick={startCall}
               disabled={!AGENT_ID}
             >
@@ -354,7 +344,7 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
           {(status === 'connecting' || status === 'connected') && (
             <button
               type="button"
-              className="w-full sm:w-auto min-w-[200px] py-3 px-4 rounded-lg font-bold text-base bg-slate-600 text-white hover:bg-slate-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full max-w-7xl py-3 px-4 rounded-lg font-bold text-base bg-slate-600 text-white hover:bg-slate-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
               onClick={endCall}
               disabled={status === 'connecting'}
             >
@@ -362,15 +352,16 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
             </button>
           )}
         </div>
+        </div>
       </div>
 
-      {/* Transcript - styled like form section */}
-      <section className="mt-4 sm:mt-6">
-        <div className="border p-5 border-gray-300 rounded-lg bg-white">
+      {/* Right column: call log - sticky */}
+      <section className="mt-6 lg:mt-0 sticky top-6 w-full min-w-0 self-start">
+        <div className="border border-gray-300 rounded-xl p-5 bg-white">
           <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3">Call log</h3>
           <div
             ref={transcriptScrollRef}
-            className="max-h-24 sm:max-h-32 overflow-y-auto text-sm leading-relaxed overscroll-contain rounded-lg border border-gray-300 bg-gray-50 p-3"
+            className="max-h-24 sm:max-h-32 lg:max-h-[50vh] overflow-y-auto text-sm leading-relaxed overscroll-contain rounded-lg border border-gray-300 bg-gray-50 p-3"
           >
             {transcript.length === 0 ? (
               <p className="text-gray-500 italic m-0">
