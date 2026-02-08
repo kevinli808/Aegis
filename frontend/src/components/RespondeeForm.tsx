@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, AlertTriangle, User, Phone, MessageSquare, Mic } from 'lucide-react';
+import { ArrowLeft, MapPin, AlertTriangle, User, MessageSquare, Mic, FileText } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { VoiceCall } from './VoiceCall';
 
 export function RespondeeForm() {
   const navigate = useNavigate();
+  const [showInputChoice, setShowInputChoice] = useState(true);
+  const [showVoiceCall, setShowVoiceCall] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -76,12 +79,25 @@ export function RespondeeForm() {
     );
   };
 
-  const handleVoiceCall = () => {
-    alert('Voice call feature - to be implemented with ElevenLabs AI');
+  const handleGetHelp = () => {
+    setShowInputChoice(true);
+  };
+
+  const handleInputByVoice = () => {
+    setShowInputChoice(false);
+    setShowVoiceCall(true);
+  };
+
+  const handleInputByForm = () => {
+    setShowInputChoice(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name.trim() || !formData.phone.trim() || !formData.situation.trim()) {
+      alert('Please provide at least your name, phone number, and situation description.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -144,6 +160,69 @@ export function RespondeeForm() {
     }
   };
 
+  if (showInputChoice) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4 sm:p-6">
+        <div className="max-w-2xl mx-auto">
+          <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6 text-sm sm:text-base">
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            Back to Home
+          </Link>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Request Emergency Help</h1>
+          <p className="text-gray-600 text-sm sm:text-base mb-8">Choose how you'd like to submit your request</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <button
+              type="button"
+              onClick={handleInputByVoice}
+              className="bg-blue-600 text-white rounded-xl p-6 sm:p-8 hover:bg-blue-700 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
+            >
+              <Mic className="w-12 h-12 sm:w-14 sm:h-14" />
+              <span className="text-xl sm:text-2xl font-bold">Input by voice</span>
+              <span className="text-sm text-blue-100">Speak to our AI assistant</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleInputByForm}
+              className="bg-white border-2 border-gray-200 text-gray-900 rounded-xl p-6 sm:p-8 hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3 shadow-sm"
+            >
+              <FileText className="w-12 h-12 sm:w-14 sm:h-14 text-gray-600" />
+              <span className="text-xl sm:text-2xl font-bold">Input by form</span>
+              <span className="text-sm text-gray-600">Fill out the form manually</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showVoiceCall) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4 sm:p-6">
+        <div className="max-w-2xl mx-auto">
+          <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4 text-sm">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </Link>
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+            <VoiceCall
+              title="AI Voice Assistant"
+              embedded
+              onBack={() => { setShowVoiceCall(false); setShowInputChoice(true); }}
+              onLocationUpdate={(lat, lng, location) => {
+                setFormData(prev => ({
+                  ...prev,
+                  latitude: lat,
+                  longitude: lng,
+                  location,
+                }))
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (submitSuccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center">
@@ -161,8 +240,8 @@ export function RespondeeForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4 sm:p-6">
+      <div className="max-w-2xl mx-auto py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
           <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-3 sm:mb-4 text-sm sm:text-base">
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -175,16 +254,16 @@ export function RespondeeForm() {
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
             <div className="flex-1">
-              <h2 className="text-white text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Can't type? Call for help</h2>
-              <p className="text-blue-100 text-sm sm:text-base">Speak to our AI assistant to submit your request</p>
+              <h2 className="text-white text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Need help? Submit your request</h2>
+              <p className="text-blue-100 text-sm sm:text-base">Choose voice or form to connect with emergency responders</p>
             </div>
             <button
               type="button"
-              onClick={handleVoiceCall}
+              onClick={handleGetHelp}
               className="w-full sm:w-auto bg-white text-blue-600 px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-blue-50 active:scale-95 transition-all flex items-center justify-center gap-3 shadow-xl"
             >
               <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
-              Start Voice Call
+              Get help
             </button>
           </div>
         </div>
@@ -221,14 +300,13 @@ export function RespondeeForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Number of People Needing Help</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Number of People Needing Help <span className="text-gray-400 font-normal">(optional)</span></label>
                 <input
                   type="number"
                   name="numberOfPeople"
                   value={formData.numberOfPeople}
                   onChange={handleChange}
                   min="1"
-                  required
                   className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -242,37 +320,34 @@ export function RespondeeForm() {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Street Address <span className="text-gray-400 font-normal">(optional if using GPS)</span></label>
                 <input
                   type="text"
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  required
                   className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="123 Main Street, Apt 4B"
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-gray-400 font-normal">(optional)</span></label>
                   <input
                     type="text"
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    required
                     className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Toronto"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Province <span className="text-gray-400 font-normal">(optional)</span></label>
                   <select
                     name="province"
                     value={formData.province}
                     onChange={handleChange}
-                    required
                     className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Select Province</option>
@@ -293,17 +368,15 @@ export function RespondeeForm() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code <span className="text-gray-400 font-normal">(optional)</span></label>
                 <input
                   type="text"
                   name="postalCode"
                   value={formData.postalCode}
                   onChange={handleChange}
-                  required
                   className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="A1A 1A1"
                   maxLength={7}
-                  pattern="[A-Za-z][0-9][A-Za-z] ?[0-9][A-Za-z][0-9]"
                 />
                 <p className="text-xs text-gray-500 mt-1">Format: A1A 1A1</p>
               </div>
@@ -373,12 +446,11 @@ export function RespondeeForm() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">How Quickly is This Escalating?</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">How Quickly is This Escalating? <span className="text-gray-400 font-normal">(optional)</span></label>
                 <select
                   name="immediacy"
                   value={formData.immediacy}
                   onChange={handleChange}
-                  required
                   className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="low">Stable - Not escalating</option>

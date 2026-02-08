@@ -402,12 +402,9 @@ export function AdminDashboard() {
             Back to Home
           </Link>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded text-white flex items-center justify-center font-bold text-lg">A</div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Welcome, {adminUser.user_metadata?.name || adminUser.email}</p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-sm text-gray-600">Welcome, {adminUser.user_metadata?.name || adminUser.email}</p>
             </div>
             <button
               onClick={logout}

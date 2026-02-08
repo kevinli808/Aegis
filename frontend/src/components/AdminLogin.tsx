@@ -91,10 +91,7 @@ export function AdminLogin() {
         </Link>
 
         <div className="bg-white rounded-xl shadow-lg p-8">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-blue-600 rounded text-white flex items-center justify-center font-bold text-xl">A</div>
-            <h1 className="text-3xl font-bold text-gray-900">Aegis Admin</h1>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-6">Aegis Admin</h1>
 
           <div className="flex items-center justify-center gap-2 mb-6 text-gray-600">
             <Shield className="w-5 h-5" />

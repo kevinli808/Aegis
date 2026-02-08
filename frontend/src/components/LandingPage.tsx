@@ -73,9 +73,7 @@ export function LandingPage() {
     <div className="min-h-screen bg-white">
       <div className="bg-slate-900 text-white py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center gap-3 mb-3">
-            <h1 className="text-4xl sm:text-5xl font-bold">Aegis</h1>
-          </div>
+            <h1 className="text-4xl sm:text-5xl font-bold mb-3">Aegis</h1>
           <p className="text-lg sm:text-xl text-gray-300">Free disaster response coordination</p>
         </div>
       </div>

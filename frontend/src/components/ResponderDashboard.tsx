@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Search, MapPin, Clock, AlertTriangle, User, Phone, Filter, Map as MapIcon, Shield } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, AlertTriangle, Phone, Shield, Filter, Search } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LiveMap } from './LiveMap';
 import { DisasterUpdates } from './DisasterUpdates';
@@ -33,6 +33,7 @@ export function ResponderDashboard() {
   const [filteredRequests, setFilteredRequests] = useState<HelpRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'active' | 'all'>('active');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<HelpRequest | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -64,14 +65,12 @@ export function ResponderDashboard() {
       }
 
       const data = await response.json();
-      console.log('Fetched requests:', data);
-      // Filter out test/example requests
-      const filteredRequests = (data.requests || []).filter((req: HelpRequest) => {
+      const filtered = (data.requests || []).filter((req: HelpRequest) => {
         const testNames = ['Kevin Li'];
         const testSituations = ['i might actually die from a snake', 'helpppp', 'hj'];
         return !testNames.includes(req.name) && !testSituations.includes(req.situation);
       });
-      setRequests(filteredRequests);
+      setRequests(filtered);
     } catch (error) {
       console.error('Error fetching help requests:', error);
     } finally {
@@ -144,367 +143,279 @@ export function ResponderDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-amber-100 text-amber-800';
+      case 'in-progress': return 'bg-sky-100 text-sky-800';
+      case 'resolved': return 'bg-emerald-100 text-emerald-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getMarkerColor = (score: number) => {
-    if (score >= 80) return '#dc2626';
-    if (score >= 60) return '#ea580c';
-    if (score >= 40) return '#ca8a04';
-    return '#16a34a';
-  };
+  const pendingCount = requests.filter(r => r.status === 'pending').length;
+  const inProgressCount = requests.filter(r => r.status === 'in-progress').length;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading requests...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading requests...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
-          <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-2 sm:mb-3 text-sm">
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            Back to Home
-          </Link>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded text-white flex items-center justify-center font-bold text-sm flex-shrink-0">A</div>
-              <div className="min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">Responder Dashboard</h1>
-                <p className="text-gray-600 text-sm sm:text-base mt-1">
-                  {filteredRequests.length} active request{filteredRequests.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <button
-                onClick={() => setShowSidebar(!showSidebar)}
-                className="lg:hidden bg-gray-100 p-2 rounded-lg hover:bg-gray-200"
-                aria-label="Toggle filters"
-              >
-                <Filter className="w-5 h-5 text-gray-700" />
-              </button>
-              
-              <Link
-                to="/admin/login"
-                className="bg-gray-700 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors text-sm sm:text-base whitespace-nowrap flex items-center gap-2"
-              >
-                <Shield className="w-4 h-4" />
-                Admin
-              </Link>
+    <div className="min-h-screen bg-white pb-24">
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <Link to="/" className="inline-flex items-center gap-2 text-sky-600 hover:text-sky-700 text-sm mb-2">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Link>
+            <p className="text-gray-500 text-sm">Welcome back</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Responder Dashboard</h1>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="lg:hidden p-2.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200"
+              aria-label="Filters"
+            >
+              <Filter className="w-5 h-5" />
+            </button>
+            <Link
+              to="/admin/login"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-gray-100 text-slate-700 hover:bg-gray-200 text-sm font-medium"
+            >
+              <Shield className="w-4 h-4" />
+              Admin
+            </Link>
+            <button
+              onClick={fetchRequests}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-gray-100 text-slate-700 hover:bg-gray-200 text-sm font-medium"
+            >
+              ↻ Refresh
+            </button>
+          </div>
+        </div>
 
-              <button
-                onClick={fetchRequests}
-                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base whitespace-nowrap"
-              >
-                ↻ Refresh
-              </button>
+        <DisasterUpdates />
+
+        {/* Impact Section */}
+        <div className="mb-6">
+          <h2 className="text-gray-600 font-medium mb-3">Impact</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setViewMode('active')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                viewMode === 'active'
+                  ? 'bg-sky-100 text-sky-800'
+                  : 'bg-gray-100 text-gray-500'
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setViewMode('all')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                viewMode === 'all'
+                  ? 'bg-sky-100 text-sky-800'
+                  : 'bg-gray-100 text-gray-500'
+              }`}
+            >
+              All
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-sky-50 rounded-2xl p-4 flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-slate-700">
+                <AlertTriangle className="w-5 h-5" />
+                <span className="text-sm font-medium">Pending</span>
+              </div>
+              <span className="text-2xl sm:text-3xl font-bold text-slate-800">{pendingCount}</span>
+            </div>
+            <div className="bg-sky-50 rounded-2xl p-4 flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-slate-700">
+                <Clock className="w-5 h-5" />
+                <span className="text-sm font-medium">In Progress</span>
+              </div>
+              <span className="text-2xl sm:text-3xl font-bold text-slate-800">{inProgressCount}</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
-        <DisasterUpdates />
+        {/* Total stat */}
+        <div className="mb-6">
+          <p className="text-gray-600 text-sm mb-1">So far, we've handled</p>
+          <p className="text-3xl sm:text-4xl font-bold text-slate-800">
+            {requests.length} request{requests.length !== 1 ? 's' : ''}
+          </p>
+        </div>
 
-        <div className="grid lg:grid-cols-4 gap-4 sm:gap-6">
-          <div className={`
-            lg:col-span-1 
-            ${showSidebar ? 'fixed inset-0 z-50 bg-black bg-opacity-50 lg:relative lg:bg-transparent' : 'hidden lg:block'}
-          `}>
-            <div className={`
-              bg-white rounded-xl shadow-md p-4 sm:p-6 
-              ${showSidebar ? 'fixed right-0 top-0 bottom-0 w-80 overflow-y-auto' : 'lg:sticky lg:top-24'}
-            `}>
-              {showSidebar && (
-                <button
-                  onClick={() => setShowSidebar(false)}
-                  className="lg:hidden absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              )}
-              
-              <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-base sm:text-lg">
-                <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-                Filters & Search
-              </h2>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Name, location..."
-                    className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
+        {/* Locations / Map */}
+        <div className="mb-6">
+          <h2 className="text-gray-600 font-medium mb-3">Locations</h2>
+          <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
+            <div className="h-[320px] relative">
+              <LiveMap
+                requests={viewMode === 'active' ? filteredRequests.filter(r => r.status !== 'resolved') : filteredRequests}
+                selectedRequest={selectedRequest}
+                onSelectRequest={(r) => setSelectedRequest(r ? requests.find(req => req.id === r.id) ?? null : null)}
+              />
+            </div>
+          </div>
+          <Link
+            to="/request-help"
+            className="mt-4 flex items-center justify-center gap-2 w-full py-3.5 rounded-full bg-slate-800 text-white font-medium hover:bg-slate-900 transition-colors"
+          >
+            Report New Incident →
+          </Link>
+        </div>
+
+        {/* Filters sidebar (mobile overlay) */}
+        {showSidebar && (
+          <div className="fixed inset-0 z-50 bg-black/30 lg:hidden" onClick={() => setShowSidebar(false)}>
+            <div
+              className="absolute right-0 top-0 bottom-0 w-80 bg-white shadow-xl p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold text-slate-800">Filters</h3>
+                <button onClick={() => setShowSidebar(false)} className="text-gray-500">✕</button>
               </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Requests</option>
-                  <option value="pending">Pending</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                </select>
-              </div>
-
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Statistics</h3>
-                <div className="space-y-2 text-xs sm:text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Requests:</span>
-                    <span className="font-semibold">{requests.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Pending:</span>
-                    <span className="font-semibold text-yellow-600">
-                      {requests.filter(r => r.status === 'pending').length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">In Progress:</span>
-                    <span className="font-semibold text-blue-600">
-                      {requests.filter(r => r.status === 'in-progress').length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Resolved:</span>
-                    <span className="font-semibold text-green-600">
-                      {requests.filter(r => r.status === 'resolved').length}
-                    </span>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="Name, location..."
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                    />
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Priority Legend</h3>
-                <div className="space-y-2 text-xs sm:text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-red-600 flex-shrink-0"></div>
-                    <span className="text-gray-700">Critical (80+)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-orange-600 flex-shrink-0"></div>
-                    <span className="text-gray-700">High (60-79)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-yellow-600 flex-shrink-0"></div>
-                    <span className="text-gray-700">Medium (40-59)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-green-600 flex-shrink-0"></div>
-                    <span className="text-gray-700">Low (0-39)</span>
-                  </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-sky-500"
+                  >
+                    <option value="all">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
+        )}
 
-          <div className="lg:col-span-3 space-y-4 sm:space-y-6">
-            <div className="bg-white rounded-xl shadow-md overflow-hidden relative z-0">
-              <div className="h-[400px] sm:h-[600px] relative" id="map-container">
-                <LiveMap 
-                  requests={filteredRequests} 
-                  selectedRequest={selectedRequest}
-                  onSelectRequest={setSelectedRequest}
-                />
-              </div>
+        {/* All Requests */}
+        <div>
+          <h2 className="text-gray-600 font-medium mb-3">All Requests</h2>
+          {filteredRequests.length === 0 ? (
+            <div className="rounded-2xl border border-gray-200 p-12 text-center">
+              <AlertTriangle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">
+                {searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters' : 'No requests at the moment'}
+              </p>
             </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredRequests.map((request) => (
+                <div
+                  key={request.id}
+                  onClick={() => setSelectedRequest(selectedRequest?.id === request.id ? null : request)}
+                  className={`rounded-2xl border p-4 cursor-pointer transition-all ${
+                    selectedRequest?.id === request.id
+                      ? 'border-sky-500 ring-2 ring-sky-100 bg-white'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h3 className="font-bold text-slate-800">{request.name}</h3>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+                          {request.status.replace('-', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-500 text-sm">
+                        <Clock className="w-3.5 h-3.5" />
+                        {new Date(request.timestamp).toLocaleString()}
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600 text-sm mt-1">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="truncate">{request.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600 text-sm">
+                        <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{request.phone}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-2 line-clamp-2">{request.situation}</p>
+                    </div>
+                    <div className={`px-3 py-2 rounded-xl text-center min-w-[80px] flex-shrink-0 ${getPriorityColor(request.priorityScore)}`}>
+                      <div className="text-xs font-medium">PRIORITY</div>
+                      <div className="text-sm font-bold">{getPriorityLabel(request.priorityScore)}</div>
+                      <div className="text-xs">{request.priorityScore}</div>
+                    </div>
+                  </div>
 
-            <div className="relative z-10">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">All Requests</h2>
-              {filteredRequests.length === 0 ? (
-                <div className="bg-white rounded-xl shadow-md p-12 text-center">
-                  <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No Requests Found</h3>
-                  <p className="text-gray-600">
-                    {searchQuery || statusFilter !== 'all' 
-                      ? 'Try adjusting your filters'
-                      : 'No help requests at the moment'}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      className={`bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer ${
-                        selectedRequest?.id === request.id ? 'ring-2 ring-blue-500' : ''
-                      }`}
-                      onClick={() => setSelectedRequest(selectedRequest?.id === request.id ? null : request)}
-                    >
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-xl font-bold text-gray-900">{request.name}</h3>
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(request.status)}`}>
-                                {request.status.toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-gray-600 text-sm">
-                              <Clock className="w-4 h-4" />
-                              {new Date(request.timestamp).toLocaleString()}
-                            </div>
-                          </div>
-                          <div className={`px-4 py-2 rounded-lg border-2 font-bold text-center min-w-[100px] ${getPriorityColor(request.priorityScore)}`}>
-                            <div className="text-xs">PRIORITY</div>
-                            <div className="text-lg">{getPriorityLabel(request.priorityScore)}</div>
-                            <div className="text-xs">{request.priorityScore}</div>
-                          </div>
+                  {selectedRequest?.id === request.id && (
+                    <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-700 mb-1">Full Details</h4>
+                        <p className="text-sm text-gray-600">{request.situation}</p>
+                      </div>
+                      {request.medicalConditions && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-700 mb-1">Medical</h4>
+                          <p className="text-sm text-gray-600">{request.medicalConditions}</p>
                         </div>
-
-                        <div className="grid md:grid-cols-2 gap-3 mb-4">
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <MapPin className="w-4 h-4 flex-shrink-0" />
-                            <span className="text-sm">{request.location}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <Phone className="w-4 h-4 flex-shrink-0" />
-                            <span className="text-sm">{request.phone}</span>
-                          </div>
-                        </div>
-
-                        <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                          <p className="text-sm text-gray-700 line-clamp-2">{request.situation}</p>
-                        </div>
-
-                        {selectedRequest?.id === request.id && (
-                          <div className="border-t pt-4 mt-4 space-y-4">
-                            <div>
-                              <h4 className="font-semibold text-gray-900 mb-2">Full Situation Description</h4>
-                              <p className="text-gray-700">{request.situation}</p>
-                            </div>
-
-                            {request.medicalConditions && (
-                              <div>
-                                <h4 className="font-semibold text-gray-900 mb-2">Medical Conditions</h4>
-                                <p className="text-gray-700">{request.medicalConditions}</p>
-                              </div>
-                            )}
-
-                            <div className="grid md:grid-cols-2 gap-4">
-                              <div>
-                                <h4 className="font-semibold text-gray-900 mb-2">Details</h4>
-                                <ul className="space-y-1 text-sm text-gray-700">
-                                  <li>• Immediacy: <strong>{request.immediacy}</strong></li>
-                                  <li>• Number of people: <strong>{request.numberOfPeople}</strong></li>
-                                  <li>• Children present: <strong>{request.isChild ? 'Yes' : 'No'}</strong></li>
-                                  <li>• Mobility limitations: <strong>{request.hasMobilityLimitations ? 'Yes' : 'No'}</strong></li>
-                                </ul>
-                              </div>
-
-                              {request.environmentalHazards && (
-                                <div>
-                                  <h4 className="font-semibold text-gray-900 mb-2">Environmental Hazards</h4>
-                                  <p className="text-sm text-gray-700">{request.environmentalHazards}</p>
-                                </div>
-                              )}
-                            </div>
-
-                            {request.latitude && request.longitude && (
-                              <div>
-                                <h4 className="font-semibold text-gray-900 mb-2">Coordinates</h4>
-                                <p className="text-sm text-gray-700">
-                                  {request.latitude}, {request.longitude}
-                                </p>
-                                <a
-                                  href={`https://www.google.com/maps?q=${request.latitude},${request.longitude}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
-                                >
-                                  View on Google Maps →
-                                </a>
-                              </div>
-                            )}
-
-                            {selectedRequest.responders && selectedRequest.responders.length > 0 && (
-                              <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                                <h4 className="font-semibold text-purple-900 mb-2">
-                                  Responders ({selectedRequest.responders.length})
-                                </h4>
-                                <div className="space-y-1">
-                                  {selectedRequest.responders.map((responder, idx) => (
-                                    <div key={idx} className="text-sm text-purple-800">
-                                      • {responder}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="flex gap-3 pt-4">
-                              {request.status === 'pending' && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusUpdate(request.id, 'in-progress');
-                                  }}
-                                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-                                >
-                                  Start Response
-                                </button>
-                              )}
-                              {request.status === 'in-progress' && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusUpdate(request.id, 'resolved');
-                                  }}
-                                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-semibold"
-                                >
-                                  Mark as Resolved
-                                </button>
-                              )}
-                              {request.status === 'resolved' && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleStatusUpdate(request.id, 'pending');
-                                  }}
-                                  className="flex-1 bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors font-semibold"
-                                >
-                                  Reopen Request
-                                </button>
-                              )}
-                            </div>
-                          </div>
+                      )}
+                      <div className="flex gap-2">
+                        {request.status === 'pending' && (
+                          <button
+                            onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'in-progress'); }}
+                            className="flex-1 py-2.5 rounded-full bg-sky-600 text-white font-medium hover:bg-sky-700 text-sm"
+                          >
+                            Start Response
+                          </button>
                         )}
-
-                        {selectedRequest?.id !== request.id && (
-                          <div className="text-center pt-2">
-                            <span className="text-xs text-gray-500">Click to view full details</span>
-                          </div>
+                        {request.status === 'in-progress' && (
+                          <button
+                            onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'resolved'); }}
+                            className="flex-1 py-2.5 rounded-full bg-emerald-600 text-white font-medium hover:bg-emerald-700 text-sm"
+                          >
+                            Mark Resolved
+                          </button>
+                        )}
+                        {request.status === 'resolved' && (
+                          <button
+                            onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'pending'); }}
+                            className="flex-1 py-2.5 rounded-full bg-amber-600 text-white font-medium hover:bg-amber-700 text-sm"
+                          >
+                            Reopen
+                          </button>
                         )}
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  {selectedRequest?.id !== request.id && (
+                    <p className="text-xs text-gray-400 mt-2 text-center">Tap for full details</p>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
