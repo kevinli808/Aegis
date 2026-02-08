@@ -4,8 +4,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ScrollToTop } from './components/ScrollToTop'
 import './index.css'
 import CallPage from './pages/Call'
+import GeminiChatPage from './pages/GeminiChat'
 import { AuthProvider, MongoDBProvider } from './providers'
-import { IndexChoice } from './components/RespondeeChoice'
 import LandingPage from './components/LandingPage'
 import { ResponderDashboard } from './components/ResponderDashboard'
 import { RespondeeForm } from './components/RespondeeForm'
@@ -24,6 +24,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/dashboard" element={<LandingPage />} />
             <Route path="/responder" element={<ResponderDashboard />} />
             <Route path="/request-help" element={<RespondeeForm />} />
+            <Route path="/gemini-chat" element={<GeminiChatPage />} />
             <Route path="/info" element={<DisasterInfo />} />
             <Route path="/call" element={<CallPage />} />
             <Route path="/admin/login" element={<AdminLogin />} />
