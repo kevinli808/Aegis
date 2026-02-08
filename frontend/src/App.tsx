@@ -5,7 +5,7 @@ import './App.css'
 
 export default function App() {
   return (
-    <div style={{ padding: '2rem', fontFamily: 'system-ui', color: '#1a1a1a' }}>
+    <div>
       <Outlet />
       <FloatingActionButton />
       <BottomNav />
