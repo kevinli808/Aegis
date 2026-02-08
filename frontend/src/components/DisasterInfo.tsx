@@ -32,7 +32,7 @@ export function DisasterInfo() {
             </div>
             <div className="bg-white rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-1">Poison Control</p>
-              <p className="text-2xl font-bold text-red-600">1-800-222-1222</p>
+              <p className="text-2xl font-bold text-red-600">1-800-567-8911</p>
             </div>
             <div className="bg-white rounded-lg p-4">
               <p className="text-sm text-gray-600 mb-1">Crisis Hotline</p>
