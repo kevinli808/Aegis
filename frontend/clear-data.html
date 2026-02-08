@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><title>Clear Requests</title></head>
+<body>
+<script>
+localStorage.removeItem('aegis_help_requests');
+localStorage.removeItem('aegis_disaster_updates');
+console.log('Cleared all help requests and updates from localStorage');
+console.log('aegis_help_requests:', localStorage.getItem('aegis_help_requests'));
+console.log('Successfully cleared');
+document.body.innerHTML = '<h1> All help request examples have been cleared from localStorage</h1>';
+</script>
+</body>
+</html>

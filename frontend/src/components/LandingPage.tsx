@@ -54,7 +54,13 @@ export function LandingPage() {
       }
 
       const data = await response.json()
-      setRequests(data.requests || [])
+      // Filter out test/example requests
+      const filteredRequests = (data.requests || []).filter((req: HelpRequest) => {
+        const testNames = ['Kevin Li']
+        const testSituations = ['i might actually die from a snake', 'helpppp', 'hj']
+        return !testNames.includes(req.name) && !testSituations.includes(req.situation)
+      })
+      setRequests(filteredRequests)
     } catch (error) {
       console.error('Error fetching help requests:', error)
     }
