@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, Trash2, AlertTriangle, Info as InfoIcon, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { API_BASE } from '../config';
 import { useToast } from './Toast';
