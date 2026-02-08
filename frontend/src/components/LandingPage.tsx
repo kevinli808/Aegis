@@ -77,7 +77,7 @@ export function LandingPage() {
             <h1 className="text-4xl sm:text-5xl font-bold">Aegis</h1>
             <img src="/original-logo.png" alt="Aegis" className="w-10 h-10 sm:w-12 sm:h-12" />
           </Link>
-          <p className="text-lg sm:text-xl text-gray-300">Free disaster response coordination</p>
+          <p className="text-lg sm:text-xl text-gray-300">Help when it matters</p>
         </div>
       </div>
 

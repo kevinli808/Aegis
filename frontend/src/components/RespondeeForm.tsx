@@ -211,8 +211,8 @@ export function RespondeeForm() {
 
   if (showInputChoice) {
     return (
-      <div className="min-h-screen p-4 sm:p-6">
-        <div className="max-w-2xl text-left">
+      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center ">
+        <div className="w-full max-w-7xl text-center">
           <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6 text-sm sm:text-base">
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             Back to Home
@@ -223,7 +223,7 @@ export function RespondeeForm() {
             <button
               type="button"
               onClick={handleInputByVoice}
-              className="bg-blue-600 text-white rounded-xl p-6 sm:p-8 hover:bg-blue-700 active:scale-95 transition-all text-left sm:text-center flex flex-col items-start sm:items-center justify-center gap-3"
+              className="bg-blue-600 text-white rounded-xl p-6 sm:p-8 hover:bg-blue-700 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
             >
               <Mic className="w-12 h-12 sm:w-14 sm:h-14" />
               <span className="text-xl sm:text-2xl font-bold">Input by voice</span>
@@ -232,7 +232,7 @@ export function RespondeeForm() {
             <button
               type="button"
               onClick={handleInputByForm}
-              className="bg-white border-2 border-gray-200 text-gray-900 rounded-xl p-6 sm:p-8 hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all text-left sm:text-center flex flex-col items-start sm:items-center justify-center gap-3 shadow-sm"
+              className="bg-white border-2 border-gray-200 text-gray-900 rounded-xl p-6 sm:p-8 hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3 shadow-sm"
             >
               <FileText className="w-12 h-12 sm:w-14 sm:h-14 text-gray-600" />
               <span className="text-xl sm:text-2xl font-bold">Input by form</span>
@@ -246,8 +246,8 @@ export function RespondeeForm() {
 
   if (showVoiceCall) {
     return (
-      <div className="min-h-screen p-4 sm:p-6">
-        <div className="max-w-2xl text-left">
+      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center justify-center">
+        <div className="w-full max-w-7xl">
           <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4 text-sm">
             <ArrowLeft className="w-4 h-4" />
             Back to Home
@@ -289,8 +289,8 @@ export function RespondeeForm() {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6">
-      <div className="max-w-2xl py-4 sm:py-6 text-left">
+    <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center">
+      <div className="w-full max-w-7xl py-4 sm:py-6 text-left">
         <div className="mb-4 sm:mb-6">
           <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-2 sm:mb-3 text-sm sm:text-base">
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -534,7 +534,7 @@ export function RespondeeForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-red-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg"
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Help Request'}
           </button>

@@ -185,6 +185,12 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
   const [transcript, setTranscript] = useState<string[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [locationStatus, setLocationStatus] = useState<string | null>(null)
+  const transcriptScrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = transcriptScrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [transcript])
 
   useEffect(() => {
     if (status !== 'connected') return
@@ -260,49 +266,55 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
 
   return (
     <div
-      className={`flex flex-col max-w-full mx-auto gap-4 pb-24 sm:pb-4 ${
-        embedded ? 'px-3 py-2' : 'px-4 py-3 sm:p-6'
+      className={`flex flex-col w-full mx-auto ${
+        embedded
+          ? 'max-w-md sm:max-w-lg md:max-w-xl px-4 py-4 sm:px-6 sm:py-5'
+          : 'max-w-md sm:max-w-lg md:max-w-xl px-4 py-4 sm:px-8 sm:py-6'
       }`}
     >
-      {/* Header - compact */}
-      <div className="flex items-center gap-2 shrink-0">
-        <div className="flex-1 min-w-0">
-          <h2 className="m-0 text-base font-semibold text-slate-800 sm:text-lg">{title}</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Describe your situation. We'll collect your info and share your location with responders automatically.</p>
-        </div>
-      </div>
+      {/* Header */}
+      <header className="mb-4 sm:mb-6">
+        <h2 className="m-0 text-lg font-semibold text-slate-800 sm:text-xl md:text-2xl">{title}</h2>
+        <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+          Describe your situation. We'll collect your info and share your location with responders automatically.
+        </p>
+      </header>
 
-      {/* Main content - no forced stretch */}
-      <div className="flex flex-col items-center gap-3 shrink-0">
+      {/* Main content */}
+      <main className="flex flex-col items-center gap-4 flex-1 min-h-0">
         {!AGENT_ID && (
-          <p className="bg-slate-100 p-3 rounded-xl text-sm m-0 border border-slate-200 w-full">
-            Set <code className="bg-slate-200 px-1 py-0.5 rounded text-xs">VITE_ELEVENLABS_AGENT_ID</code> in{' '}
-            <code className="bg-slate-200 px-1 py-0.5 rounded text-xs">.env</code> (get it from{' '}
-            <a href="https://elevenlabs.io/app/conversational-ai" target="_blank" rel="noreferrer" className="text-blue-600">
+          <div className="w-full bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm text-amber-800">
+            Set <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs font-mono">VITE_ELEVENLABS_AGENT_ID</code> in{' '}
+            <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs font-mono">.env</code> — get it from the{' '}
+            <a href="https://elevenlabs.io/app/conversational-ai" target="_blank" rel="noreferrer" className="underline font-medium">
               ElevenLabs dashboard
             </a>
-            )
-          </p>
+            .
+          </div>
         )}
 
-        {error && <p className="text-red-600 m-0 text-sm">{error}</p>}
+        {error && (
+          <div className="w-full p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
 
         {status === 'connecting' && (
-          <div className="flex flex-col items-center gap-2 py-4">
-            <div className="w-12 h-12 rounded-full bg-green-500 animate-pulse" />
+          <div className="flex flex-col items-center justify-center gap-4 py-8 sm:py-12">
+            <div className="w-14 h-14 rounded-full bg-green-500 animate-pulse" />
             <p className="m-0 text-sm font-medium text-slate-700">Connecting…</p>
             <p className="m-0 text-xs text-slate-500">Allow microphone when prompted</p>
           </div>
         )}
 
         {status === 'connected' && (
-          <div className="w-full flex flex-col items-center gap-3">
+          <div className="w-full flex flex-col items-center gap-4">
             {locationStatus && (
-              <p className="m-0 text-xs text-slate-500 flex items-center gap-1">
+              <p className="m-0 text-xs text-slate-500 flex items-center gap-1.5">
                 <span>📍</span> {locationStatus}
               </p>
             )}
-            <div className="w-full max-w-[320px] sm:max-w-[480px] rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 aspect-[2/1]">
+            <div className="w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 shadow-lg aspect-[2/1] min-h-[200px]">
               <SynthwaveVisualizer conversation={conversation} mode={mode} />
             </div>
             <p className="m-0 text-sm font-medium text-slate-600">
@@ -312,54 +324,57 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
             </p>
           </div>
         )}
-      </div>
 
-      {/* Call button - fixed at bottom on mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-10 shrink-0 bg-white border-t border-slate-200 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] px-4 sm:static sm:border-0 sm:pt-0 sm:pb-0 sm:bg-transparent">
-        {status === 'idle' && (
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 w-full min-h-12 px-5 py-3 text-base font-semibold border-none rounded-xl cursor-pointer bg-green-500 text-white hover:bg-green-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed sm:max-w-56 sm:mx-auto"
-            onClick={startCall}
-            disabled={!AGENT_ID}
-          >
-            <span className="text-lg">📞</span>
-            Start call
-          </button>
-        )}
-        {(status === 'connecting' || status === 'connected') && (
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 w-full min-h-12 px-5 py-3 text-base font-semibold border-none rounded-xl cursor-pointer bg-red-500 text-white hover:bg-red-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed sm:max-w-56 sm:mx-auto"
-            onClick={endCall}
-            disabled={status === 'connecting'}
-          >
-            <span className="text-lg">📵</span>
-            End call
-          </button>
-        )}
-      </div>
+        {/* Call button */}
+        <div className="w-full flex justify-center pt-2 sm:pt-4">
+          {status === 'idle' && (
+            <button
+              type="button"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto min-w-[200px] min-h-12 px-6 py-3 text-base font-semibold rounded-xl border-none cursor-pointer bg-green-500 text-white hover:bg-green-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              onClick={startCall}
+              disabled={!AGENT_ID}
+            >
+              <span className="text-xl"></span>
+              Start call
+            </button>
+          )}
+          {(status === 'connecting' || status === 'connected') && (
+            <button
+              type="button"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto min-w-[200px] min-h-12 px-6 py-3 text-base font-semibold rounded-xl border-none cursor-pointer bg-red-500 text-white hover:bg-red-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              onClick={endCall}
+              disabled={status === 'connecting'}
+            >
+              <span className="text-xl">📵</span>
+              End call
+            </button>
+          )}
+        </div>
+      </main>
 
-      {/* Transcript - only show when there's content or call is active */}
-      <div className={`shrink-0 pt-3 border-t border-slate-200 ${status === 'idle' && transcript.length === 0 ? 'opacity-60' : ''}`}>
-        <h3 className="m-0 mb-1.5 text-xs font-semibold text-slate-600">Call log</h3>
-        <div className={`max-h-20 overflow-y-auto text-xs leading-normal overscroll-contain sm:max-h-28 ${embedded ? 'max-h-16' : ''}`}>
+      {/* Transcript */}
+      <section className="mt-6 pt-4 border-t border-slate-200">
+        <h3 className="m-0 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Call log</h3>
+        <div
+          ref={transcriptScrollRef}
+          className="max-h-24 sm:max-h-32 overflow-y-auto text-xs leading-relaxed overscroll-contain rounded-lg bg-slate-50 p-3 border border-slate-200"
+        >
           {transcript.length === 0 ? (
-            <p className="text-slate-400 italic m-0 text-xs">
-              {status === 'idle' && 'Start a call to see the log.'}
+            <p className="text-slate-400 italic m-0">
+              {status === 'idle' && 'Start a call to see the conversation.'}
               {status === 'connecting' && 'Connecting…'}
               {status === 'connected' && 'Conversation will appear here.'}
               {status === 'error' && 'No messages.'}
             </p>
           ) : (
             transcript.map((line, i) => (
-              <div key={i} className={`mb-1 break-words ${i % 2 === 0 ? 'text-slate-800' : 'text-slate-600'}`}>
+              <div key={i} className={`mb-1.5 last:mb-0 break-words ${i % 2 === 0 ? 'text-slate-800' : 'text-slate-600'}`}>
                 {line}
               </div>
             ))
           )}
         </div>
-      </div>
+      </section>
     </div>
   )
 }

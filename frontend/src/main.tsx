@@ -1,12 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { ScrollToTop } from './components/ScrollToTop'
 import './index.css'
 import CallPage from './pages/Call'
 import { AuthProvider, MongoDBProvider } from './providers'
-
-// New UI components (Disaster Response UI)
-import { IndexChoice } from './components/IndexChoice'
+import { IndexChoice } from './components/RespondeeChoice'
 import LandingPage from './components/LandingPage'
 import { ResponderDashboard } from './components/ResponderDashboard'
 import { RespondeeForm } from './components/RespondeeForm'
@@ -19,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
     <AuthProvider>
       <MongoDBProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard" element={<LandingPage />} />
