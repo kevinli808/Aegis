@@ -2,13 +2,15 @@ from fastapi import FastAPI, HTTPException, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_db
 from crud import IncidentManager
-from gemini_service import get_chat_response
+from gemini_service import get_chat_response, score_incident_with_gemini
 from datetime import datetime
 from bson import ObjectId
 from pydantic import BaseModel, Field
 from typing import List
 import bson
 import math
+import hashlib
+import secrets
 
 
 
@@ -108,6 +110,81 @@ class IncidentReport(BaseModel):
     environmentalHazards: str = ""
     numberOfPeople: str = "1"
 
+
+class AdminLoginBody(BaseModel):
+    email: str
+    password: str
+
+
+class AdminSignupBody(BaseModel):
+    email: str
+    password: str
+    name: str = ""
+
+
+def _hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+@app.post("/admin/login")
+async def admin_login(body: AdminLoginBody):
+    """Admin login - supports hardcoded admin/adminadmin or MongoDB admins."""
+    email = (body.email or "").strip()
+    password = body.password or ""
+
+    # Hardcoded fallback for admin/adminadmin
+    if email == "admin" and password == "adminadmin":
+        return {
+            "success": True,
+            "accessToken": "hardcoded-admin-token",
+            "user": {"email": "admin@aegis.local", "user_metadata": {"name": "System Admin", "role": "admin"}},
+        }
+
+    # Look up in admins collection
+    admin = db.admins.find_one({"email": email})
+    if not admin:
+        return {"success": False, "error": "Invalid email or password"}
+    stored_hash = admin.get("password_hash", "")
+    if stored_hash != _hash_password(password):
+        return {"success": False, "error": "Invalid email or password"}
+    token = admin.get("token") or secrets.token_urlsafe(32)
+    db.admins.update_one({"_id": admin["_id"]}, {"$set": {"token": token}})
+    return {
+        "success": True,
+        "accessToken": token,
+        "user": {"email": admin["email"], "user_metadata": {"name": admin.get("name", admin["email"])}},
+    }
+
+
+@app.post("/admin/signup")
+async def admin_signup(body: AdminSignupBody):
+    """Create a new admin account."""
+    email = (body.email or "").strip().lower()
+    password = body.password or ""
+    name = (body.name or "").strip() or email
+
+    if len(password) < 6:
+        return {"success": False, "error": "Password must be at least 6 characters"}
+
+    if db.admins.find_one({"email": email}):
+        return {"success": False, "error": "An admin with this email already exists"}
+
+    token = secrets.token_urlsafe(32)
+    doc = {
+        "email": email,
+        "password_hash": _hash_password(password),
+        "name": name,
+        "token": token,
+        "created_at": datetime.utcnow().isoformat(),
+    }
+    db.admins.insert_one(doc)
+    return {
+        "success": True,
+        "accessToken": token,
+        "user": {"email": email, "user_metadata": {"name": name}},
+    }
+
+
 @app.get("/")
 async def heartbeat():
     return {"status": "online", "message": "Aegis Backend is running"}
@@ -120,7 +197,7 @@ async def create_report(report: IncidentReport):
         data["situation"] = data["type"]
     elif data.get("type") and data["type"] not in ("medical", "fire", "flood", "trapped", "power_outage", "emergency"):
         data["situation"] = data.get("situation") or data["type"]
-    # Map RespondeeForm immediacy to safety_status for scoring
+    # Map RespondeeForm immediacy to safety_status
     immediacy = data.get("immediacy", "moderate")
     if immediacy in ("critical", "high"):
         data["safety_status"] = "danger"
@@ -128,7 +205,7 @@ async def create_report(report: IncidentReport):
         data["safety_status"] = "stable"
     else:
         data["safety_status"] = "stable"
-    # Infer type from situation for scoring
+    # Infer type from situation
     situation = (data.get("situation") or data.get("type") or "").lower()
     if "medical" in situation or "injured" in situation or "bleeding" in situation:
         data["type"] = "medical"
@@ -144,8 +221,16 @@ async def create_report(report: IncidentReport):
         data["symptoms"] = list(set(list(data.get("symptoms", [])) + [data["medicalConditions"]]))
     data["num_people"] = int(data.get("numberOfPeople", 1) or 1) if isinstance(data.get("numberOfPeople"), str) else (data.get("num_people") or 1)
     data["immediate_danger"] = data.get("immediacy") == "critical"
-    # Run scoring
-    scoring_results = run_scoring_logic(data)
+
+    # Score via Gemini (fallback to rule-based if Gemini fails)
+    try:
+        gemini_result = await score_incident_with_gemini(data)
+        scoring_results = {"score": gemini_result["score"], "priority": gemini_result["priority"]}
+        if gemini_result.get("reason"):
+            data["score_reason"] = gemini_result["reason"]
+    except Exception as e:
+        print(f"Gemini scoring failed, using fallback: {e}")
+        scoring_results = run_scoring_logic(data)
     full_report = {
         **data,
         **scoring_results,
@@ -179,13 +264,14 @@ async def get_stats():
     }
 
 @app.get("/incidents")
-async def get_incidents_by_priority(priority: int = None, map_view: bool = False):
+async def get_incidents_by_priority(priority: int = None, map_view: bool = False, include_resolved: bool = False):
     """
-    The 'All-in-One' route. 
+    The 'All-in-One' route.
     Use ?map_view=true for lightweight map data.
     Use ?priority=1 to filter.
+    Use ?include_resolved=true for admin (show all incidents).
     """
-    query = {"status": {"$ne": "resolved"}}
+    query = {} if include_resolved else {"status": {"$ne": "resolved"}}
     if priority:
         query["priority"] = priority
 
@@ -237,6 +323,24 @@ async def update_incident_status(incident_id: str, body: StatusUpdate):
         raise HTTPException(status_code=404, detail="Incident not found")
     return {"message": "Status updated", "status": body.status}
 
+@app.delete("/incidents/{incident_id}")
+async def delete_incident(incident_id: str):
+    """Delete a single incident."""
+    if not bson.objectid.ObjectId.is_valid(incident_id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    result = db.incidents.delete_one({"_id": ObjectId(incident_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return {"success": True, "message": "Incident deleted"}
+
+
+@app.delete("/incidents")
+async def delete_all_incidents():
+    """Delete all incidents."""
+    result = db.incidents.delete_many({})
+    return {"success": True, "deletedCount": result.deleted_count}
+
+
 @app.get("/incidents/{incident_id}")
 async def get_incident_detail(incident_id: str):
     """
@@ -251,6 +355,58 @@ async def get_incident_detail(incident_id: str):
     
     doc["_id"] = str(doc["_id"])
     return doc
+
+# --- DISASTER UPDATES (MongoDB) ---
+class DisasterUpdateCreate(BaseModel):
+    title: str
+    message: str
+    severity: str = "info"  # info | warning | critical
+    author: str = "System Admin"
+
+
+@app.get("/updates")
+async def get_updates():
+    """Get all disaster updates, newest first."""
+    cursor = db.disaster_updates.find().sort("timestamp", -1)
+    results = []
+    for doc in cursor:
+        ts = doc.get("timestamp")
+        results.append({
+            "id": str(doc["_id"]),
+            "_id": str(doc["_id"]),
+            "title": doc.get("title", ""),
+            "message": doc.get("message", ""),
+            "severity": doc.get("severity", "info"),
+            "author": doc.get("author", "System Admin"),
+            "timestamp": ts.isoformat() if ts and hasattr(ts, "isoformat") else (str(ts) if ts else ""),
+        })
+    return results
+
+
+@app.post("/updates")
+async def create_update(body: DisasterUpdateCreate):
+    """Create a disaster update (admin)."""
+    doc = {
+        "title": body.title,
+        "message": body.message,
+        "severity": body.severity,
+        "timestamp": datetime.now(),
+        "author": body.author,
+    }
+    result = db.disaster_updates.insert_one(doc)
+    return {"success": True, "id": str(result.inserted_id)}
+
+
+@app.delete("/updates/{update_id}")
+async def delete_update(update_id: str):
+    """Delete a disaster update."""
+    if not bson.objectid.ObjectId.is_valid(update_id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    result = db.disaster_updates.delete_one({"_id": ObjectId(update_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Update not found")
+    return {"success": True, "message": "Update deleted"}
+
 
 @app.post("/chat/gemini")
 async def chat_with_gemini(request: Request):

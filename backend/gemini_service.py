@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 import google.generativeai as genai
 from severity_ranker import SeverityRanker
@@ -12,6 +13,82 @@ if not api_key:
     print('Warning: GEMINI_API_KEY is not set in environment variables')
 else:
     genai.configure(api_key=api_key)
+
+
+def _build_incident_summary(data: dict) -> str:
+    """Build a concise summary of incident data for the scoring prompt."""
+    situation = data.get("situation") or data.get("type") or "unspecified"
+    symptoms = data.get("symptoms", [])
+    if isinstance(symptoms, list):
+        symptoms_str = ", ".join(str(s) for s in symptoms) if symptoms else "none"
+    else:
+        symptoms_str = str(symptoms)
+    return f"""
+Incident Type: {data.get('type', 'unknown')}
+Situation Description: {situation}
+Medical Conditions / Symptoms: {symptoms_str}
+Safety Status: {data.get('safety_status', 'unknown')}
+Immediacy Level: {data.get('immediacy', 'unknown')}
+Number of People Affected: {data.get('num_people', 1)}
+Child Involved: {data.get('isChild', False)}
+Mobility Limitations: {data.get('hasMobilityLimitations', False)}
+Environmental Hazards: {data.get('environmentalHazards', 'none')}
+Immediate Danger Flag: {data.get('immediate_danger', False)}
+"""
+
+
+async def score_incident_with_gemini(data: dict) -> dict:
+    """
+    Use Gemini to analyze incident data and return a priority score and level.
+    
+    Returns:
+        dict: {"score": int (0-150+), "priority": int (1=critical, 2=high, 3=lower)}
+    """
+    if not api_key:
+        raise ValueError("Gemini API key not configured")
+
+    summary = _build_incident_summary(data)
+    prompt = f"""You are an emergency response triage AI. Analyze this incident report and assign a severity score and priority level.
+
+INCIDENT REPORT:
+{summary}
+
+SCORING RULES:
+- Score: 0-150+ (higher = more urgent). Consider: life-threatening conditions, number of people, environmental hazards, mobility/child factors.
+- Priority: 1 = critical (life-threatening, needs immediate help), 2 = high (urgent), 3 = lower (stable, can wait).
+
+Respond with ONLY valid JSON in this exact format, no other text:
+{{"score": <number>, "priority": <1 or 2 or 3>, "reason": "<brief 1-sentence explanation>"}}
+"""
+
+    try:
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+
+        # Extract JSON (handle markdown code blocks and extra text)
+        start = text.find("{")
+        if start >= 0:
+            depth, end = 0, -1
+            for i, c in enumerate(text[start:], start):
+                if c == "{":
+                    depth += 1
+                elif c == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end = i
+                        break
+            if end >= 0:
+                json_str = text[start : end + 1]
+                parsed = json.loads(json_str)
+                score = int(parsed.get("score", 50))
+                priority = int(parsed.get("priority", 2))
+                priority = max(1, min(3, priority))
+                return {"score": score, "priority": priority, "reason": parsed.get("reason", "")}
+        raise ValueError("Could not parse Gemini response as JSON")
+    except Exception as e:
+        print(f"Gemini scoring error: {e}")
+        raise
 
 
 def build_context_prompt(form_data: dict) -> str:
@@ -107,7 +184,10 @@ async def get_chat_response(conversation_history: list, user_message: str, form_
         raise Exception('Gemini API key not configured')
     
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel(
+            'gemini-2.5-flash',
+            system_instruction='Respond in plain text only. Do not use markdown, asterisks, hashtags, emojis, or any formatting. Use simple bullet points (dashes or numbers) if needed.',
+        )
         
         # Prepare the query
         query_text = user_message
