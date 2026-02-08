@@ -3,7 +3,7 @@ import { AlertCircle, Info } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { LiveMap } from './LiveMap'
 import { DisasterUpdates } from './DisasterUpdates'
-import { useMongoDB } from '../providers/MongoDBProvider'
+import { projectId, publicAnonKey } from '../utils/supabase/info'
 
 interface HelpRequest {
   id: string
@@ -28,7 +28,6 @@ interface HelpRequest {
 }
 
 export function LandingPage() {
-  const { get } = useMongoDB();
   const [requests, setRequests] = useState<HelpRequest[]>([])
   const [selectedRequest, setSelectedRequest] = useState<HelpRequest | null>(null)
 
@@ -40,9 +39,82 @@ export function LandingPage() {
 
   const fetchRequests = async () => {
     try {
-      // Fetch from MongoDB API
-      const data = await get<HelpRequest[]>("/requests");
-      setRequests(Array.isArray(data) ? data : [])
+      const response = await fetch('http://localhost:8000/incidents', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json', // This is the ONLY one you need
+        },
+        //body: JSON.stringify(payload),
+      });
+      // const response = await fetch(
+      //   `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/get-requests`,
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${publicAnonKey}`,
+      //     },
+      //   },
+      // )
+
+      /*
+      {
+        "type": "trapped",
+        "num_people": 4,
+        "status": "resolved",
+        "priority": 3,
+        "final_score": 29,
+        "location": {
+          "type": "Point",
+          "coordinates": [
+            -123.13673337186765,
+            49.28075094888844
+          ]
+        },
+        "timestamp": "2026-02-07T14:43:36.626000",
+        "id": "6987c018e6a8b40d0023972f"
+      }, 
+      */
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to fetch requests: ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      console.log('Fetch requests data:', data);
+      
+      // Map MongoDB response to HelpRequest shape
+      const mappedRequests: HelpRequest[] = (data || []).map((req: any) => ({
+        id: req._id, // MongoDB's _id as id
+        name: req.name || '',
+        phone: req.phone || '',
+        location: req.location ? JSON.stringify(req.location) : '',
+        city: req.city || '',
+        province: req.province || '',
+        postalCode: req.postalCode || '',
+        latitude:
+          req.location && req.location.type === 'Point' && Array.isArray(req.location.coordinates)
+            ? String(req.location.coordinates[1])
+            : '',
+        longitude:
+          req.location && req.location.type === 'Point' && Array.isArray(req.location.coordinates)
+            ? String(req.location.coordinates[0])
+            : '',
+        situation: req.situation || req.safety_status || '',
+        medicalConditions: req.medicalConditions || (req.symptoms ? req.symptoms.join(', ') : ''),
+        immediacy: req.immediacy || '',
+        isChild: req.isChild ?? false,
+        hasMobilityLimitations: req.hasMobilityLimitations ?? false,
+        environmentalHazards: req.environmentalHazards || '',
+        numberOfPeople: req.numberOfPeople || (req.num_people ? String(req.num_people) : ''),
+        priorityScore: req.priorityScore || req.final_score || 0,
+        timestamp: req.timestamp || '',
+        status: req.status || '',
+      }));
+
+      setRequests(mappedRequests);
+
+      //setRequests(data.requests || [])
     } catch (error) {
       console.error('Error fetching help requests:', error)
     }
