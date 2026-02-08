@@ -240,9 +240,10 @@ async def create_report(report: IncidentReport):
     result = db.incidents.insert_one(full_report)
     
     return {
-        "status": "success", 
-        "id": str(result.inserted_id), 
-        "priority": scoring_results["priority"]
+        "status": "success",
+        "id": str(result.inserted_id),
+        "priority": scoring_results["priority"],
+        "score": scoring_results["score"],
     }
 
 @app.get("/incidents/stats")

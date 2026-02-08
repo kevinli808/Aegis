@@ -363,7 +363,8 @@ export function RespondeeForm() {
     setShowVoiceCall(true);
   };
 
-  const handleCallEnd = (transcript: string[]) => {
+  const handleCallEnd = (payload: { transcript: string[]; location?: { lat: string; lng: string; display: string } }) => {
+    const { transcript, location: loc } = payload;
     const parsed = parseTranscriptToFormData(transcript);
     setFormData((prev) => {
       const merged = { ...prev };
@@ -374,8 +375,20 @@ export function RespondeeForm() {
         merged.medicalConditions = parsed.medicalConditions;
       if (parsed.immediacy) merged.immediacy = parsed.immediacy;
       if (parsed.numberOfPeople) merged.numberOfPeople = parsed.numberOfPeople;
+      if (loc) {
+        merged.latitude = loc.lat;
+        merged.longitude = loc.lng;
+        merged.location = loc.display;
+      }
       return merged;
     });
+    if (loc) {
+      const latNum = parseFloat(loc.lat);
+      const lngNum = parseFloat(loc.lng);
+      if (!isNaN(latNum) && !isNaN(lngNum)) {
+        updateLocationFromCoords(latNum, lngNum);
+      }
+    }
     setShowVoiceCall(false);
   };
 
@@ -477,7 +490,13 @@ export function RespondeeForm() {
 
         success("Help request submitted successfully!");
         setSubmitSuccess(true);
-        navigate("/gemini-chat", { state: { formData } });
+        navigate("/gemini-chat", {
+          state: {
+            formData,
+            requestId: data.id ?? data.requestId,
+            score: data.score ?? data.priorityScore ?? null,
+          },
+        });
       } else {
         error("Failed to submit request. Please try again.");
       }
@@ -547,14 +566,7 @@ export function RespondeeForm() {
               setShowVoiceCall(false);
               setShowInputChoice(true);
             }}
-            onLocationUpdate={(lat: string, lng: string) => {
-              const latNum = parseFloat(lat);
-              const lngNum = parseFloat(lng);
-              if (!isNaN(latNum) && !isNaN(lngNum)) {
-                updateLocationFromCoords(latNum, lngNum);
-              }
-            }}
-            onCallEnd={handleCallEnd}
+            onCallEnd={(transcript: string[]) => handleCallEnd({ transcript })}
           />
         </div>
       </div>

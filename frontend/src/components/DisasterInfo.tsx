@@ -230,7 +230,7 @@ export function DisasterInfo() {
           <p>If you're experiencing an emergency, submit a help request now.</p>
           <Link
             to="/request-help"
-            className="inline-block border-2 border-blue-100 bg-white text-blue-600 px-8 py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors"
+            className="mt-4 inline-block border-2 border-blue-100 bg-white text-blue-600 px-8 py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors"
           >
             Request Help
           </Link>

@@ -21,7 +21,7 @@ export function Navbar({ rightContent }: NavbarProps) {
             </Link>
             <Link
               to="/responder"
-              className="bg-sky-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-sky-700 transition-all"
+              className="bg-sky-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-sky-700 transition-all"
             >
               Responder Dashboard
             </Link>

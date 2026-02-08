@@ -29,24 +29,46 @@ interface Message {
   timestamp: Date;
 }
 
+function getScoreStatus(score: number): { label: string; isHighPriority: boolean; description: string; variant: 'critical' | 'high' | 'medium' | 'low' } {
+  if (score >= 80) return { label: 'Critical', isHighPriority: true, description: 'Your situation has been marked as critical. Responders are being prioritized to reach you.', variant: 'critical' };
+  if (score >= 60) return { label: 'High', isHighPriority: true, description: 'Your request is high priority. Responders will be dispatched soon.', variant: 'high' };
+  if (score >= 40) return { label: 'Medium', isHighPriority: false, description: 'Your request has been received. Responders will assist based on priority order.', variant: 'medium' };
+  return { label: 'Lower', isHighPriority: false, description: 'Your request is in the queue. Help is on the way.', variant: 'low' };
+}
+
 export default function GeminiChatPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData | null>(null);
+  const [score, setScore] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Get form data from location state
+  // Get form data and score from location state, or fetch by requestId
   useEffect(() => {
-    const state = location.state as { formData?: FormData } | null;
+    const state = location.state as { formData?: FormData; requestId?: string; score?: number } | null;
     if (!state?.formData) {
       navigate('/request-help');
       return;
     }
     setFormData(state.formData);
+
+    const applyScore = (s: number) => setScore(s);
+
+    if (typeof state.score === 'number') {
+      applyScore(state.score);
+    } else if (state.requestId) {
+      fetch(`${API_BASE}/incidents/${state.requestId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((doc) => {
+          const s = doc?.score ?? doc?.final_score ?? doc?.priorityScore;
+          if (typeof s === 'number') applyScore(s);
+        })
+        .catch(() => {});
+    }
 
     // Initialize with welcome message
     const contextMsg: Message = {
@@ -157,6 +179,31 @@ export default function GeminiChatPage() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+
+            {score !== null && (() => {
+              const status = getScoreStatus(score);
+              const variantStyles = {
+                critical: 'bg-red-100 border-red-300 text-red-800',
+                high: 'bg-orange-100 border-orange-300 text-orange-800',
+                medium: 'bg-yellow-100 border-yellow-300 text-yellow-800',
+                low: 'bg-green-100 border-green-300 text-green-800',
+              };
+              return (
+                <div className="sm:col-span-2">
+                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Priority Assessment</p>
+                  <div className={`rounded-lg border-2 px-4 py-3 ${variantStyles[status.variant]}`}>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <span className="font-bold">{status.label} priority</span>
+                        <span className="opacity-90"> — Score: {score}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm mt-1 opacity-90">{status.description}</p>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div>
               <p className="text-gray-500 text-xs uppercase tracking-wide">Your Situation</p>
               <p className="text-gray-900 font-medium">{formData.situation}</p>
