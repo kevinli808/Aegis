@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, Clock, AlertTriangle, Phone, Shield, Search, ChevronDown } from 'lucide-react';
+import { MapPin, Clock, AlertTriangle, Phone, Shield, Search, ChevronDown, List } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { LiveMap } from './LiveMap';
+import { BackToHomeButton } from './BackToHomeButton';
+import { Drawer } from './Drawer';
 
 interface HelpRequest {
   id: string;
@@ -34,7 +36,7 @@ export function ResponderDashboard() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<HelpRequest | null>(null);
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
 
   useEffect(() => {
     fetchRequests();
@@ -86,8 +88,6 @@ export function ResponderDashboard() {
   };
 
   const handleStatusUpdate = async (requestId: string, newStatus: string) => {
-    const responderName = prompt('Enter your name:');
-    if (!responderName) return;
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/update-status`,
@@ -97,7 +97,7 @@ export function ResponderDashboard() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${publicAnonKey}`,
           },
-          body: JSON.stringify({ requestId, status: newStatus, responderName }),
+          body: JSON.stringify({ requestId, status: newStatus, responderName: 'Responder' }),
         }
       );
       if (response.ok) {
@@ -152,7 +152,7 @@ export function ResponderDashboard() {
     );
   }
 
-  const SidebarContent = () => (
+  const filtersContent = (
     <>
       <div className="mb-6">
         <h3 className="font-bold text-slate-800 mb-3">Filters & Search</h3>
@@ -229,18 +229,116 @@ export function ResponderDashboard() {
     </>
   );
 
+  const RequestCard = ({ request }: { request: HelpRequest }) => (
+    <div
+      onClick={() => setSelectedRequest(selectedRequest?.id === request.id ? null : request)}
+      className={`rounded-xl border p-4 cursor-pointer transition-all bg-white ${
+        selectedRequest?.id === request.id
+          ? 'border-sky-500 ring-2 ring-sky-100'
+          : 'border-gray-300 hover:border-gray-300'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <h3 className="font-bold text-neutral-800">{request.name}</h3>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+              {request.status.replace('-', ' ').toUpperCase()}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-500 text-sm">
+            <Clock className="w-3.5 h-3.5" />
+            {new Date(request.timestamp).toLocaleString()}
+          </div>
+          <div className="flex items-center gap-2 text-gray-600 text-sm mt-1">
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{request.location}</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-600 text-sm">
+            <Phone className="w-3.5 h-3.5 shrink-0" />
+            <span>{request.phone}</span>
+          </div>
+          <p className="text-sm text-gray-600 mt-2 line-clamp-2">{request.situation}</p>
+        </div>
+        <div className={`px-3 py-2 rounded-xl text-center min-w-[80px] shrink-0 ${getPriorityColor(request.priorityScore)}`}>
+          <div className="text-xs font-medium">PRIORITY</div>
+          <div className="text-sm font-bold">{getPriorityLabel(request.priorityScore)}</div>
+          <div className="text-xs">{request.priorityScore}</div>
+        </div>
+      </div>
+
+      {selectedRequest?.id === request.id && (
+        <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+          <div>
+            <h4 className="text-sm font-semibold text-neutral-700 mb-1">Full Details</h4>
+            <p className="text-sm text-gray-600">{request.situation}</p>
+          </div>
+          {request.medicalConditions && (
+            <div>
+              <h4 className="text-sm font-semibold text-neutral-700 mb-1">Medical</h4>
+              <p className="text-sm text-gray-600">{request.medicalConditions}</p>
+            </div>
+          )}
+          <div className="flex gap-2">
+            {request.status === 'pending' && (
+              <button
+                onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'in-progress'); }}
+                className="flex-1 py-2.5 rounded-full bg-sky-600 text-white font-medium hover:bg-sky-700 text-sm"
+              >
+                Start Response
+              </button>
+            )}
+            {request.status === 'in-progress' && (
+              <button
+                onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'resolved'); }}
+                className="flex-1 py-2.5 rounded-full bg-emerald-600 text-white font-medium hover:bg-emerald-700 text-sm"
+              >
+                Mark Resolved
+              </button>
+            )}
+            {request.status === 'resolved' && (
+              <button
+                onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'pending'); }}
+                className="flex-1 py-2.5 rounded-full bg-amber-600 text-white font-medium hover:bg-amber-700 text-sm"
+              >
+                Reopen
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const RequestsListContent = () => (
+    <>
+      <h2 className="text-xl font-bold text-neutral-800 mb-4">All Requests</h2>
+      {filteredRequests.length === 0 ? (
+        <div className="rounded-xl border border-gray-300 p-12 text-center bg-gray-50">
+          <AlertTriangle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">
+            {searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters' : 'No requests at the moment'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredRequests.map((request) => (
+            <RequestCard key={request.id} request={request} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="border-b border-gray-200 bg-white sticky top-0 z-20">
+      <div className="border-b border-gray-300 bg-white sticky top-0 z-1100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <Link to="/" className="inline-flex items-center gap-2 text-sky-600 hover:text-sky-700 text-sm mb-1">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Home
-              </Link>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Responder Dashboard</h1>
+              <BackToHomeButton className="mb-1 text-sky-600 hover:text-sky-800" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800">Responder Dashboard</h1>
               <p className="text-gray-500 text-sm">{activeCount} active request{activeCount !== 1 ? 's' : ''}</p>
             </div>
             <div className="flex gap-2">
@@ -251,43 +349,43 @@ export function ResponderDashboard() {
                 <Shield className="w-4 h-4" />
                 Admin
               </Link>
-              <button
-                onClick={fetchRequests}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-sky-600 text-white hover:bg-sky-700 text-sm font-medium"
-              >
-                ↻ Refresh
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Sidebar */}
-          <aside className="lg:w-72 shrink-0">
-            <div className="lg:sticky lg:top-24 p-4 rounded-xl bg-gray-50 border border-gray-200">
-              <SidebarContent />
+      <div className="flex flex-col lg:flex-row">
+        {/* Mobile: Map is full priority - fills viewport below header */}
+        <div className="lg:hidden flex-1 flex flex-col min-h-0">
+          <div className="flex-1 min-h-[calc(100vh-140px)] relative">
+            <div className="absolute inset-0 rounded-none">
+              <LiveMap
+                requests={filteredRequests}
+                selectedRequest={selectedRequest}
+                onSelectRequest={(r) => setSelectedRequest(r ? requests.find(req => req.id === r.id) ?? null : null)}
+              />
             </div>
-            {/* Mobile sidebar toggle */}
-            <button
-              onClick={() => setShowSidebar(!showSidebar)}
-              className="lg:hidden mt-4 w-full py-2.5 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700"
-            >
-              {showSidebar ? 'Hide filters' : 'Show filters'}
-            </button>
-            {showSidebar && (
-              <div className="lg:hidden mt-4 p-4 rounded-xl bg-gray-50 border border-gray-200">
-                <SidebarContent />
-              </div>
-            )}
-          </aside>
+          </div>
+          {/* FAB to open drawer */}
+          <button
+            onClick={() => setShowDrawer(true)}
+            className="fixed bottom-6 left-1/2 -tranneutral-x-1/2 z-[1050] flex items-center gap-2 px-6 py-3 rounded-full bg-sky-600 text-white font-medium shadow-lg hover:bg-sky-700"
+          >
+            <List className="w-5 h-5" />
+            Requests ({filteredRequests.length})
+          </button>
+        </div>
 
-          {/* Main Content */}
+        {/* Desktop: Original layout */}
+        <div className="hidden lg:flex max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 gap-6">
+          <aside className="w-72 shrink-0 self-start sticky top-36">
+            <div className="p-4 rounded-xl bg-gray-50 border border-gray-300">
+              {filtersContent}
+            </div>
+          </aside>
           <main className="flex-1 min-w-0">
-            {/* Map */}
-            <div className="mb-6 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shadow-sm">
-              <div className="h-[320px] sm:h-[400px] relative">
+            <div className="mb-6 rounded-xl overflow-hidden border border-gray-300 bg-gray-50">
+              <div className="h-[400px] relative">
                 <LiveMap
                   requests={filteredRequests}
                   selectedRequest={selectedRequest}
@@ -295,106 +393,23 @@ export function ResponderDashboard() {
                 />
               </div>
             </div>
-
-            {/* All Requests */}
-            <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-4">All Requests</h2>
-              {filteredRequests.length === 0 ? (
-                <div className="rounded-xl border border-gray-200 p-12 text-center bg-gray-50">
-                  <AlertTriangle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">
-                    {searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters' : 'No requests at the moment'}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      onClick={() => setSelectedRequest(selectedRequest?.id === request.id ? null : request)}
-                      className={`rounded-xl border p-4 cursor-pointer transition-all bg-white ${
-                        selectedRequest?.id === request.id
-                          ? 'border-sky-500 ring-2 ring-sky-100'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 className="font-bold text-slate-800">{request.name}</h3>
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                              {request.status.replace('-', ' ').toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-500 text-sm">
-                            <Clock className="w-3.5 h-3.5" />
-                            {new Date(request.timestamp).toLocaleString()}
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600 text-sm mt-1">
-                            <MapPin className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate">{request.location}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-gray-600 text-sm">
-                            <Phone className="w-3.5 h-3.5 shrink-0" />
-                            <span>{request.phone}</span>
-                          </div>
-                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">{request.situation}</p>
-                        </div>
-                        <div className={`px-3 py-2 rounded-xl text-center min-w-[80px] shrink-0 ${getPriorityColor(request.priorityScore)}`}>
-                          <div className="text-xs font-medium">PRIORITY</div>
-                          <div className="text-sm font-bold">{getPriorityLabel(request.priorityScore)}</div>
-                          <div className="text-xs">{request.priorityScore}</div>
-                        </div>
-                      </div>
-
-                      {selectedRequest?.id === request.id && (
-                        <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
-                          <div>
-                            <h4 className="text-sm font-semibold text-slate-700 mb-1">Full Details</h4>
-                            <p className="text-sm text-gray-600">{request.situation}</p>
-                          </div>
-                          {request.medicalConditions && (
-                            <div>
-                              <h4 className="text-sm font-semibold text-slate-700 mb-1">Medical</h4>
-                              <p className="text-sm text-gray-600">{request.medicalConditions}</p>
-                            </div>
-                          )}
-                          <div className="flex gap-2">
-                            {request.status === 'pending' && (
-                              <button
-                                onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'in-progress'); }}
-                                className="flex-1 py-2.5 rounded-full bg-sky-600 text-white font-medium hover:bg-sky-700 text-sm"
-                              >
-                                Start Response
-                              </button>
-                            )}
-                            {request.status === 'in-progress' && (
-                              <button
-                                onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'resolved'); }}
-                                className="flex-1 py-2.5 rounded-full bg-emerald-600 text-white font-medium hover:bg-emerald-700 text-sm"
-                              >
-                                Mark Resolved
-                              </button>
-                            )}
-                            {request.status === 'resolved' && (
-                              <button
-                                onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'pending'); }}
-                                className="flex-1 py-2.5 rounded-full bg-amber-600 text-white font-medium hover:bg-amber-700 text-sm"
-                              >
-                                Reopen
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="px-1">
+              <RequestsListContent />
             </div>
           </main>
         </div>
       </div>
+
+      <Drawer
+        open={showDrawer}
+        onClose={() => setShowDrawer(false)}
+        title="Requests & Filters"
+      >
+        <div className="space-y-6">
+          {filtersContent}
+          <RequestsListContent />
+        </div>
+      </Drawer>
     </div>
   );
 }

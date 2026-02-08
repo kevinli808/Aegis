@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Flame, Droplets, Wind, Home, Heart, Phone } from 'lucide-react';
+import { AlertTriangle, Flame, Droplets, Wind, Home, Heart, Phone } from 'lucide-react';
+import { BackToHomeButton } from './BackToHomeButton';
 
 export function DisasterInfo() {
   return (
@@ -7,10 +8,7 @@ export function DisasterInfo() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4">
-            <ArrowLeft className="w-5 h-5" />
-            Back to Home
-          </Link>
+          <BackToHomeButton className="mb-4" />
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 bg-blue-600 rounded text-white flex items-center justify-center font-bold text-lg flex-shrink-0">A</div>
             <h1 className="text-4xl font-bold text-gray-900">Disaster Safety Information</h1>
@@ -43,7 +41,7 @@ export function DisasterInfo() {
         {/* Disaster Types */}
         <div className="space-y-6">
           {/* Fire Safety */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-xl overflow-hidden">
             <div className="bg-orange-500 p-4 flex items-center gap-3">
               <Flame className="w-8 h-8 text-white" />
               <h2 className="text-2xl font-bold text-white">Fire Safety</h2>
@@ -74,7 +72,7 @@ export function DisasterInfo() {
           </div>
 
           {/* Flood Safety */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-xl overflow-hidden">
             <div className="bg-blue-500 p-4 flex items-center gap-3">
               <Droplets className="w-8 h-8 text-white" />
               <h2 className="text-2xl font-bold text-white">Flood Safety</h2>
@@ -106,7 +104,7 @@ export function DisasterInfo() {
           </div>
 
           {/* Earthquake Safety */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-xl overflow-hidden">
             <div className="bg-amber-600 p-4 flex items-center gap-3">
               <Home className="w-8 h-8 text-white" />
               <h2 className="text-2xl font-bold text-white">Earthquake Safety</h2>
@@ -139,7 +137,7 @@ export function DisasterInfo() {
           </div>
 
           {/* Severe Weather */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-xl overflow-hidden">
             <div className="bg-purple-600 p-4 flex items-center gap-3">
               <Wind className="w-8 h-8 text-white" />
               <h2 className="text-2xl font-bold text-white">Severe Weather (Tornado/Hurricane)</h2>
@@ -166,7 +164,7 @@ export function DisasterInfo() {
           </div>
 
           {/* Medical Emergencies */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-xl overflow-hidden">
             <div className="bg-red-600 p-4 flex items-center gap-3">
               <Heart className="w-8 h-8 text-white" />
               <h2 className="text-2xl font-bold text-white">Medical Emergency Tips</h2>
@@ -198,7 +196,7 @@ export function DisasterInfo() {
           </div>
 
           {/* General Preparedness */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-xl overflow-hidden">
             <div className="bg-green-600 p-4 flex items-center gap-3">
               <AlertTriangle className="w-8 h-8 text-white" />
               <h2 className="text-2xl font-bold text-white">General Emergency Preparedness</h2>

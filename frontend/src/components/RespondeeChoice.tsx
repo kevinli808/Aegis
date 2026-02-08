@@ -68,7 +68,7 @@ export function IndexChoice() {
         {/* Map */}
         <div className="mb-6">
           <h2 className="text-gray-600 font-medium mb-3">Active incidents</h2>
-          <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
+          <div className="rounded-2xl overflow-hidden border border-gray-300 bg-gray-50">
             <div className="h-[280px] sm:h-[320px] relative">
               <LiveMap
                 requests={activeRequests}

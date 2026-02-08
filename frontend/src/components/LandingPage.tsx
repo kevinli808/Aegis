@@ -71,11 +71,11 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="bg-slate-900 text-white py-6 sm:py-8">
+      <div className="bg-slate-900 text-white py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-left">
           <Link to="/" className="flex items-center gap-3 mb-3 text-white hover:text-white/90">
             <h1 className="text-4xl sm:text-5xl font-bold">Aegis</h1>
-            <img src="/original-logo.png" alt="Aegis" className="w-10 h-10 sm:w-12 sm:h-12" />
+            <img src="/aegis-logo.png" alt="Aegis" className="w-10 h-10 sm:w-12 sm:h-12" />
           </Link>
           <p className="text-lg sm:text-xl text-gray-300">Help when it matters</p>
         </div>
@@ -107,7 +107,7 @@ export function LandingPage() {
 
         <div className="mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Active Incidents Map</h2>
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-gray-200 relative z-0">
+          <div className="bg-white rounded-xl overflow-hidden border-2 border-gray-300 relative z-0">
             <div className="h-[400px] sm:h-[600px] relative">
               <LiveMap requests={requests} selectedRequest={selectedRequest} onSelectRequest={setSelectedRequest} />
             </div>
@@ -137,7 +137,7 @@ export function LandingPage() {
           </Link>
         </div>
 
-        <div className="bg-gray-50 rounded-xl p-6 sm:p-8 border border-gray-200 relative z-10">
+        <div className="bg-gray-50 rounded-xl p-6 border border-gray-300 relative z-10">
           <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">How It Works</h3>
           <div className="space-y-3 text-gray-700">
             <p>1. People in need submit help requests with their location and situation</p>

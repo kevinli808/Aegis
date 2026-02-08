@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Trash2, AlertTriangle, Info as InfoIcon, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Send, Trash2, AlertTriangle, Info as InfoIcon, AlertCircle } from 'lucide-react';
+import { BackToHomeButton } from './BackToHomeButton';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface DisasterUpdate {
@@ -395,12 +396,9 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+      <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-3 text-sm">
-            <ArrowLeft className="w-5 h-5" />
-            Back to Home
-          </Link>
+          <BackToHomeButton className="mb-3" />
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
@@ -418,7 +416,7 @@ export function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="bg-white rounded-xl p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Post Disaster Update</h2>
             <form onSubmit={postUpdate} className="space-y-4">
               <div>
@@ -469,7 +467,7 @@ export function AdminDashboard() {
             </form>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="bg-white rounded-xl p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Recent Updates</h2>
             <div className="space-y-3 max-h-[500px] overflow-y-auto">
               {updates.length === 0 ? (
@@ -505,14 +503,14 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6 mt-6">
+        <div className="bg-white rounded-xl p-6 mt-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Manage Help Requests</h2>
           <div className="space-y-3">
             {requests.length === 0 ? (
               <p className="text-gray-500 text-center py-8">No requests to manage</p>
             ) : (
               requests.map(request => (
-                <div key={request.id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                <div key={request.id} className="border border-gray-300 rounded-lg p-4 hover:border-blue-300 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">

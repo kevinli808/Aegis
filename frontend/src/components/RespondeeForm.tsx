@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, AlertTriangle, User, MessageSquare, Mic, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { MapPin, AlertTriangle, User, MessageSquare, Mic, FileText, Heart } from 'lucide-react';
+import { BackToHomeButton } from './BackToHomeButton';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { VoiceCall } from './VoiceCall';
 
@@ -66,6 +67,57 @@ const initialFormData: FormData = {
   environmentalHazards: '',
   numberOfPeople: '1',
 };
+
+/** Extract form fields from voice call transcript */
+function parseTranscriptToFormData(transcript: string[]): Partial<FormData> {
+  const fullText = transcript.join(' ').toLowerCase()
+  const userLines = transcript
+    .filter(l => /^\[(user|human|caller)\]/i.test(l))
+    .map(l => l.replace(/^\[[^\]]+\]:\s*/i, ''))
+    .join(' ')
+  const text = (userLines || fullText).toLowerCase()
+
+  const extracted: Partial<FormData> = {}
+
+  // Name: "my name is X", "I'm X", "name is X"
+  const nameMatch = text.match(/(?:my name is|i'm|i am|name is|call me)\s+([a-z]+(?:\s+[a-z]+)?)/i)
+  if (nameMatch) extracted.name = nameMatch[1].trim()
+
+  // Phone: digits with optional separators
+  const phoneMatch = text.match(/(?:\d[\d\s\-\.]{7,})|(?:\+?1?[\s\-\.]?\(?\d{3}\)?[\s\-\.]?\d{3}[\s\-\.]?\d{4})/)
+  if (phoneMatch) extracted.phone = phoneMatch[0].replace(/\s/g, '').replace(/[^\d+]/g, '').slice(0, 15)
+
+  // Situation: look for common phrases, or use first substantial user message
+  const situationPhrases = ['situation is', 'i need help', 'need help with', 'help with', 'what\'s happening', 'happening is', 'problem is', 'emergency is']
+  for (const phrase of situationPhrases) {
+    const idx = text.indexOf(phrase)
+    if (idx >= 0) {
+      const after = text.slice(idx + phrase.length).trim()
+      const end = after.search(/\s+(?:my|i've|i have|phone|number|name|medical|location)/i) || after.length
+      const snippet = after.slice(0, end || 200).trim()
+      if (snippet.length > 10) extracted.situation = snippet
+      break
+    }
+  }
+  if (!extracted.situation && userLines.length > 30) {
+    extracted.situation = userLines.slice(0, 500).trim()
+  }
+
+  // Medical conditions
+  const medicalMatch = text.match(/(?:medical|condition|injured|injury|have)\s+(?:is|:)?\s*([^.!?]+)/i)
+  if (medicalMatch && medicalMatch[1].length > 3) extracted.medicalConditions = medicalMatch[1].trim()
+
+  // Immediacy
+  if (/\b(life.?threatening|critical|dying)\b/i.test(text)) extracted.immediacy = 'critical'
+  else if (/\b(urgent|rapidly|worsening)\b/i.test(text)) extracted.immediacy = 'high'
+  else if (/\b(stable|not escalating)\b/i.test(text)) extracted.immediacy = 'low'
+
+  // Number of people
+  const peopleMatch = text.match(/(\d+)\s*(?:people|persons?|adults?|family)/i) || text.match(/(?:people|persons?)\s*(\d+)/i)
+  if (peopleMatch) extracted.numberOfPeople = peopleMatch[1]
+
+  return extracted
+}
 
 export function RespondeeForm() {
   const navigate = useNavigate();
@@ -135,6 +187,21 @@ export function RespondeeForm() {
   const handleInputByVoice = () => {
     setShowInputChoice(false);
     setShowVoiceCall(true);
+  };
+
+  const handleCallEnd = (transcript: string[]) => {
+    const parsed = parseTranscriptToFormData(transcript);
+    setFormData(prev => {
+      const merged = { ...prev };
+      if (parsed.name) merged.name = parsed.name;
+      if (parsed.phone) merged.phone = parsed.phone;
+      if (parsed.situation) merged.situation = parsed.situation;
+      if (parsed.medicalConditions) merged.medicalConditions = parsed.medicalConditions;
+      if (parsed.immediacy) merged.immediacy = parsed.immediacy;
+      if (parsed.numberOfPeople) merged.numberOfPeople = parsed.numberOfPeople;
+      return merged;
+    });
+    setShowVoiceCall(false);
   };
 
   const handleInputByForm = () => {
@@ -211,19 +278,18 @@ export function RespondeeForm() {
 
   if (showInputChoice) {
     return (
-      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center ">
-        <div className="w-full max-w-7xl text-center">
-          <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6 text-sm sm:text-base">
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            Back to Home
-          </Link>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Request Help</h1>
-          <p className="text-gray-600 text-sm sm:text-base mb-8">Choose how you'd like to submit your request</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col">
+        <div className="w-full max-w-7xl">
+          <BackToHomeButton className="mb-6" />
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Request Assistance</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Choose how you'd like to submit your request</p>
+        </div>
+        <div className="flex-1 flex items-center justify-center w-full max-w-7xl sm:flex-initial sm:items-stretch sm:justify-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl sm:max-w-none">
             <button
               type="button"
               onClick={handleInputByVoice}
-              className="bg-blue-600 text-white rounded-xl p-6 sm:p-8 hover:bg-blue-700 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
+              className="bg-sky-600 text-white rounded-xl p-6 sm:p-8 border-2 border-sky-500 hover:bg-sky-700 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
             >
               <Mic className="w-12 h-12 sm:w-14 sm:h-14" />
               <span className="text-xl sm:text-2xl font-bold">Input by voice</span>
@@ -232,7 +298,7 @@ export function RespondeeForm() {
             <button
               type="button"
               onClick={handleInputByForm}
-              className="bg-white border-2 border-gray-200 text-gray-900 rounded-xl p-6 sm:p-8 hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3 shadow-sm"
+              className="bg-white border-2 border-gray-300 text-gray-900 rounded-xl p-6 sm:p-8 hover:bg-gray-200 hover:border-gray-300 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
             >
               <FileText className="w-12 h-12 sm:w-14 sm:h-14 text-gray-600" />
               <span className="text-xl sm:text-2xl font-bold">Input by form</span>
@@ -246,15 +312,11 @@ export function RespondeeForm() {
 
   if (showVoiceCall) {
     return (
-      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center justify-center">
-        <div className="w-full max-w-7xl">
-          <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4 text-sm">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
-          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+      <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col">
+        <div className="w-full max-w-7xl shrink-0">
+          <BackToHomeButton className="mb-4" />
             <VoiceCall
-              title="AI Voice Assistant"
+              title="Aegis Assistant"
               embedded
               onBack={() => { setShowVoiceCall(false); setShowInputChoice(true); }}
               onLocationUpdate={(lat: string, lng: string, location: string) => {
@@ -265,8 +327,8 @@ export function RespondeeForm() {
                   location,
                 }))
               }}
+              onCallEnd={handleCallEnd}
             />
-          </div>
         </div>
       </div>
     );
@@ -275,7 +337,7 @@ export function RespondeeForm() {
   if (submitSuccess) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-left sm:text-center max-w-md">
+        <div className="bg-white rounded-2xl p-12 text-left sm:text-center max-w-xl">
           <div className="w-16 h-16 bg-green-500 rounded-full mx-auto mb-4 flex items-center justify-center">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -292,16 +354,13 @@ export function RespondeeForm() {
     <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center">
       <div className="w-full max-w-7xl py-4 sm:py-6 text-left">
         <div className="mb-4 sm:mb-6">
-          <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-2 sm:mb-3 text-sm sm:text-base">
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            Back to Home
-          </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Request Emergency Help</h1>
-          <p className="text-gray-600 text-sm">Fill out this form to connect with emergency responders. Our AI system will prioritize your request based on urgency.</p>
+          <BackToHomeButton className="mb-2 sm:mb-3" />
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">Request Emergency Help</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Fill out this form to connect with emergency responders. Our AI system will prioritize your request based on urgency and dispatch help as quickly as possible.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-4 sm:p-6 space-y-4">
-          <div className="border-b pb-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl space-y-4">
+          <div className="border p-5 border-gray-300 rounded-lg">
             <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <User className="w-4 h-4 sm:w-5 sm:h-5" />
               Personal Information
@@ -345,7 +404,7 @@ export function RespondeeForm() {
             </div>
           </div>
 
-          <div className="border-b pb-4">
+          <div className="border p-5 border-gray-300 rounded-lg">
             <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
               Location
@@ -371,7 +430,7 @@ export function RespondeeForm() {
                     value={formData.city}
                     onChange={handleChange}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Toronto"
+                    placeholder="Vancouver"
                   />
                 </div>
                 <div>
@@ -448,7 +507,7 @@ export function RespondeeForm() {
             </div>
           </div>
 
-          <div className="border-b pb-4">
+          <div className="border p-5 border-gray-300 rounded-lg">
             <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
               Situation Details
@@ -505,8 +564,11 @@ export function RespondeeForm() {
             </div>
           </div>
 
-          <div className="pb-4">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3">Vulnerability Factors</h2>
+          <div className="border p-5 border-gray-300 rounded-lg">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+              Vulnerability Factors
+            </h2>
             <div className="space-y-3">
               <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <input
@@ -534,7 +596,7 @@ export function RespondeeForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg"
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Help Request'}
           </button>
