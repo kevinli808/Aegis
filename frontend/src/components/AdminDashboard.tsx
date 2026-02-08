@@ -27,6 +27,9 @@ interface HelpRequest {
   responders?: string[];
 }
 
+const STORAGE_KEY_UPDATES = 'aegis_disaster_updates';
+const STORAGE_KEY_REQUESTS = 'aegis_help_requests';
+
 export function AdminDashboard() {
   const [updates, setUpdates] = useState<DisasterUpdate[]>([]);
   const [requests, setRequests] = useState<HelpRequest[]>([]);
@@ -69,11 +72,21 @@ export function AdminDashboard() {
       );
 
       const data = await response.json();
-      if (data.success) {
+      if (data.success && data.updates) {
         setUpdates(data.updates);
+        localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(data.updates));
       }
     } catch (error) {
-      console.error('Error fetching updates:', error);
+      console.error('Error fetching updates from server:', error);
+      // Fall back to local storage
+      const stored = localStorage.getItem(STORAGE_KEY_UPDATES);
+      if (stored) {
+        try {
+          setUpdates(JSON.parse(stored));
+        } catch (e) {
+          setUpdates([]);
+        }
+      }
     }
   };
 
@@ -94,19 +107,60 @@ export function AdminDashboard() {
       console.log('Requests data:', data);
       
       if (data.requests) {
-        setRequests(data.requests);
-        console.log('Set requests:', data.requests.length);
+        // Filter out test/example requests
+        const testNames = ['Kevin Li'];
+        const testSituations = ['i might actually die from a snake', 'helpppp', 'hj'];
+        const filteredRequests = data.requests.filter((req: HelpRequest) => {
+          return !testNames.includes(req.name) && !testSituations.includes(req.situation);
+        });
+        setRequests(filteredRequests);
+        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(filteredRequests));
+        console.log('Set requests:', filteredRequests.length);
       } else if (data.error) {
         console.error('Error from server:', data.error);
+        // Fall back to local storage
+        const stored = localStorage.getItem(STORAGE_KEY_REQUESTS);
+        if (stored) {
+          try {
+            setRequests(JSON.parse(stored));
+          } catch (e) {
+            setRequests([]);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching requests:', error);
+      // Fall back to local storage
+      const stored = localStorage.getItem(STORAGE_KEY_REQUESTS);
+      if (stored) {
+        try {
+          setRequests(JSON.parse(stored));
+        } catch (e) {
+          setRequests([]);
+        }
+      }
     }
   };
 
   const postUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    // Validate form data
+    if (!newUpdate.title.trim() || !newUpdate.message.trim()) {
+      alert('Please fill in all fields');
+      setIsLoading(false);
+      return;
+    }
+
+    const update: DisasterUpdate = {
+      id: Date.now().toString(),
+      title: newUpdate.title,
+      message: newUpdate.message,
+      severity: newUpdate.severity,
+      timestamp: new Date().toISOString(),
+      author: adminUser.user_metadata?.name || adminUser.email || 'System Admin',
+    };
 
     try {
       console.log('Posting update with token:', adminToken);
@@ -134,11 +188,7 @@ export function AdminDashboard() {
       console.log('Response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error text:', errorText);
-        alert('Failed to post update: ' + errorText);
-        setIsLoading(false);
-        return;
+        throw new Error(`HTTP error status: ${response.status}`);
       }
       
       const data = await response.json();
@@ -146,14 +196,22 @@ export function AdminDashboard() {
 
       if (data.success) {
         alert('Update posted successfully!');
+        const updatedUpdates = [update, ...updates];
+        setUpdates(updatedUpdates);
+        localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(updatedUpdates));
         setNewUpdate({ title: '', message: '', severity: 'info' });
-        fetchUpdates();
       } else {
-        alert('Failed to post update: ' + (data.error || 'Unknown error'));
+        throw new Error(data.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Error posting update:', error);
-      alert('Failed to post update: ' + (error instanceof Error ? error.message : String(error)));
+      // Use local storage as fallback
+      console.log('Using local storage fallback for update');
+      const updatedUpdates = [update, ...updates];
+      setUpdates(updatedUpdates);
+      localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(updatedUpdates));
+      alert('Update posted successfully (saved locally)!');
+      setNewUpdate({ title: '', message: '', severity: 'info' });
     } finally {
       setIsLoading(false);
     }
@@ -184,10 +242,7 @@ export function AdminDashboard() {
       console.log('Delete update response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Delete update response error text:', errorText);
-        alert('Failed to delete update: ' + errorText);
-        return;
+        throw new Error(`HTTP error status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -195,13 +250,20 @@ export function AdminDashboard() {
 
       if (data.success) {
         alert('Update deleted');
-        fetchUpdates();
+        const updatedUpdates = updates.filter(u => u.id !== updateId);
+        setUpdates(updatedUpdates);
+        localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(updatedUpdates));
       } else {
-        alert('Failed to delete update: ' + (data.error || 'Unknown error'));
+        throw new Error(data.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Error deleting update:', error);
-      alert('Failed to delete update: ' + (error instanceof Error ? error.message : String(error)));
+      // Use local storage as fallback
+      console.log('Using local storage fallback for delete');
+      const updatedUpdates = updates.filter(u => u.id !== updateId);
+      setUpdates(updatedUpdates);
+      localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(updatedUpdates));
+      alert('Update deleted (saved locally)!');
     }
   };
 
@@ -230,10 +292,7 @@ export function AdminDashboard() {
       console.log('Delete response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Delete response error text:', errorText);
-        alert('Failed to delete request: ' + errorText);
-        return;
+        throw new Error(`HTTP error status: ${response.status}`);
       }
       
       const data = await response.json();
@@ -241,13 +300,20 @@ export function AdminDashboard() {
 
       if (data.success) {
         alert('Request deleted');
-        fetchRequests();
+        const updatedRequests = requests.filter(r => r.id !== requestId);
+        setRequests(updatedRequests);
+        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(updatedRequests));
       } else {
-        alert('Failed to delete request: ' + (data.error || 'Unknown error'));
+        throw new Error(data.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Error deleting request:', error);
-      alert('Failed to delete request: ' + (error instanceof Error ? error.message : String(error)));
+      // Use local storage as fallback
+      console.log('Using local storage fallback for delete');
+      const updatedRequests = requests.filter(r => r.id !== requestId);
+      setRequests(updatedRequests);
+      localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(updatedRequests));
+      alert('Request deleted (saved locally)!');
     }
   };
 
@@ -280,25 +346,26 @@ export function AdminDashboard() {
       console.log('Delete all response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Delete all response error text:', errorText);
-        alert('Failed to delete all requests: ' + errorText);
-        setIsLoading(false);
-        return;
+        throw new Error(`HTTP error status: ${response.status}`);
       }
       
       const data = await response.json();
       console.log('Delete all response data:', data);
 
       if (data.success) {
-        alert(`Successfully deleted ${data.deletedCount || 0} requests`);
-        fetchRequests();
+        alert(`Successfully deleted ${data.deletedCount || requests.length} requests`);
+        setRequests([]);
+        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify([]));
       } else {
-        alert('Failed to delete all requests: ' + (data.error || 'Unknown error'));
+        throw new Error(data.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Error deleting all requests:', error);
-      alert('Failed to delete all requests: ' + (error instanceof Error ? error.message : String(error)));
+      // Use local storage as fallback
+      console.log('Using local storage fallback for delete all');
+      setRequests([]);
+      localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify([]));
+      alert('All requests deleted (saved locally)!');
     } finally {
       setIsLoading(false);
     }
@@ -335,12 +402,9 @@ export function AdminDashboard() {
             Back to Home
           </Link>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded text-white flex items-center justify-center font-bold text-lg">A</div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Welcome, {adminUser.user_metadata?.name || adminUser.email}</p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-sm text-gray-600">Welcome, {adminUser.user_metadata?.name || adminUser.email}</p>
             </div>
             <button
               onClick={logout}

@@ -1,13 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { ScrollToTop } from './components/ScrollToTop'
 import './index.css'
-import App from './App.tsx'
 import CallPage from './pages/Call'
-import ProtectedLayout from './layouts/ProtectedLayout'
 import { AuthProvider, MongoDBProvider } from './providers'
-
-// New UI components (Disaster Response UI)
+import { IndexChoice } from './components/RespondeeChoice'
 import LandingPage from './components/LandingPage'
 import { ResponderDashboard } from './components/ResponderDashboard'
 import { RespondeeForm } from './components/RespondeeForm'
@@ -20,20 +18,16 @@ createRoot(document.getElementById('root')!).render(
     <AuthProvider>
       <MongoDBProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
-            <Route path="/" element={<App />}>
-              <Route index element={<LandingPage />} />
-              <Route path="responder" element={<ResponderDashboard />} />
-              <Route path="request-help" element={<RespondeeForm />} />
-              <Route path="info" element={<DisasterInfo />} />
-              <Route path="admin">
-                <Route path="login" element={<AdminLogin />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-              </Route>
-              <Route element={<ProtectedLayout />}>
-                <Route path="call" element={<CallPage />} />
-              </Route>
-            </Route>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<LandingPage />} />
+            <Route path="/responder" element={<ResponderDashboard />} />
+            <Route path="/request-help" element={<RespondeeForm />} />
+            <Route path="/info" element={<DisasterInfo />} />
+            <Route path="/call" element={<CallPage />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Routes>
         </BrowserRouter>
       </MongoDBProvider>

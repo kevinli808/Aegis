@@ -1,0 +1,1 @@
+export { IndexChoice } from './RespondeeChoice'

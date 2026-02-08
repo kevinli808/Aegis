@@ -83,7 +83,7 @@ export function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="min-h-screen">
       <div className="max-w-md mx-auto px-4 py-8">
         <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6">
           <ArrowLeft className="w-5 h-5" />
@@ -91,10 +91,7 @@ export function AdminLogin() {
         </Link>
 
         <div className="bg-white rounded-xl shadow-lg p-8">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-blue-600 rounded text-white flex items-center justify-center font-bold text-xl">A</div>
-            <h1 className="text-3xl font-bold text-gray-900">Aegis Admin</h1>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-6">Aegis Admin</h1>
 
           <div className="flex items-center justify-center gap-2 mb-6 text-gray-600">
             <Shield className="w-5 h-5" />
@@ -106,7 +103,7 @@ export function AdminLogin() {
               onClick={() => setIsSignup(false)}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                 !isSignup 
-                  ? 'bg-blue-600 text-white' 
+                  ? 'bg-slate-700 text-white' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -116,7 +113,7 @@ export function AdminLogin() {
               onClick={() => setIsSignup(true)}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                 isSignup 
-                  ? 'bg-blue-600 text-white' 
+                  ? 'bg-slate-700 text-white' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -188,7 +185,7 @@ export function AdminLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 active:scale-95 transition-all font-medium disabled:opacity-50"
+              className="w-full bg-slate-700 text-white py-3 rounded-lg hover:bg-slate-800 active:scale-95 transition-all font-medium disabled:opacity-50"
             >
               {isLoading ? 'Processing...' : (isSignup ? 'Create Admin Account' : 'Login')}
             </button>
