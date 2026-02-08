@@ -1,6 +1,6 @@
 /**
- * API base URL. When empty, providers use mock mode (no backend calls).
- * Set VITE_API_URL in .env to point at your Python backend when ready.
+ * API base URL for MongoDB backend.
+ * Set VITE_API_URL in .env to override (e.g. for production).
  */
-export const API_BASE = import.meta.env.VITE_API_URL ?? ''
+export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 export const isMockMode = !API_BASE

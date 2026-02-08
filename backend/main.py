@@ -15,7 +15,6 @@ app = FastAPI()
 db = get_db()
 manager = IncidentManager(db)
 
-app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -88,34 +87,70 @@ def run_scoring_logic(data):
 
 # --- ROUTES ---
 class IncidentReport(BaseModel):
-    # These must match the keys in your JavaScript 'payload' object
-    type: str
-    num_people: int
-    symptoms: List[str]
-    safety_status: str
+    # Core fields for scoring
+    type: str = "emergency"
+    num_people: int = 1
+    symptoms: List[str] = []
+    safety_status: str = "stable"
     location: dict
+    # RespondeeForm fields (optional)
+    name: str = ""
+    phone: str = ""
+    situation: str = ""
+    city: str = ""
+    province: str = ""
+    postalCode: str = ""
+    medicalConditions: str = ""
+    immediacy: str = "moderate"
+    isChild: bool = False
+    hasMobilityLimitations: bool = False
+    environmentalHazards: str = ""
+    numberOfPeople: str = "1"
 
 @app.get("/")
 async def heartbeat():
     return {"status": "online", "message": "Aegis Backend is running"}
 
 @app.post("/report")
-async def create_report(report: IncidentReport): # Change 'payload: dict' to 'report: IncidentReport'
-    # Convert Pydantic model to a Python dictionary
+async def create_report(report: IncidentReport):
     data = report.model_dump()
-    
-    # 1. Run your scoring logic
+    # Form sends situation in "type" field - normalize
+    if data.get("type") and len(str(data["type"])) > 20 and not data.get("situation"):
+        data["situation"] = data["type"]
+    elif data.get("type") and data["type"] not in ("medical", "fire", "flood", "trapped", "power_outage", "emergency"):
+        data["situation"] = data.get("situation") or data["type"]
+    # Map RespondeeForm immediacy to safety_status for scoring
+    immediacy = data.get("immediacy", "moderate")
+    if immediacy in ("critical", "high"):
+        data["safety_status"] = "danger"
+    elif immediacy == "low":
+        data["safety_status"] = "stable"
+    else:
+        data["safety_status"] = "stable"
+    # Infer type from situation for scoring
+    situation = (data.get("situation") or data.get("type") or "").lower()
+    if "medical" in situation or "injured" in situation or "bleeding" in situation:
+        data["type"] = "medical"
+    elif "fire" in situation or "smoke" in situation:
+        data["type"] = "fire"
+    elif "flood" in situation or "water" in situation:
+        data["type"] = "flood"
+    elif "trapped" in situation or "stuck" in situation:
+        data["type"] = "trapped"
+    elif data.get("type") not in ("medical", "fire", "flood", "trapped", "power_outage"):
+        data["type"] = "medical"
+    if data.get("medicalConditions"):
+        data["symptoms"] = list(set(list(data.get("symptoms", [])) + [data["medicalConditions"]]))
+    data["num_people"] = int(data.get("numberOfPeople", 1) or 1) if isinstance(data.get("numberOfPeople"), str) else (data.get("num_people") or 1)
+    data["immediate_danger"] = data.get("immediacy") == "critical"
+    # Run scoring
     scoring_results = run_scoring_logic(data)
-    
-    # 2. Combine the data with scores and metadata
     full_report = {
         **data,
         **scoring_results,
-        "status": "active",
+        "status": "pending",
         "timestamp": datetime.now()
     }
-    
-    # 3. Save to MongoDB
     result = db.incidents.insert_one(full_report)
     
     return {
@@ -129,10 +164,9 @@ async def get_stats():
     """
     Dashboard route: must stay above the generic /incidents route.
     """
-    active_count = db.incidents.count_documents({"status": "active"})
-    # Summing num_people across all active incidents
+    active_count = db.incidents.count_documents({"status": {"$ne": "resolved"}})
     pipeline = [
-        {"$match": {"status": "active"}},
+        {"$match": {"status": {"$ne": "resolved"}}},
         {"$group": {"_id": None, "total_people": {"$sum": "$num_people"}}}
     ]
     stats = list(db.incidents.aggregate(pipeline))
@@ -150,11 +184,11 @@ async def get_incidents_by_priority(priority: int = None, map_view: bool = False
     Use ?map_view=true for lightweight map data.
     Use ?priority=1 to filter.
     """
-    query = {"status": "active"}
+    query = {"status": {"$ne": "resolved"}}
     if priority:
         query["priority"] = priority
 
-    cursor = db.incidents.find(query).sort("final_score", -1)
+    cursor = db.incidents.find(query).sort("score", -1)
     results = []
 
     for doc in cursor:
@@ -173,21 +207,34 @@ async def get_incidents_by_priority(priority: int = None, map_view: bool = False
 
 @app.patch("/incidents/{incident_id}/resolve")
 async def resolve_incident(incident_id: str):
-    """
-    Updates status to resolved.
-    """
+    """Updates status to resolved."""
     if not bson.objectid.ObjectId.is_valid(incident_id):
         raise HTTPException(status_code=400, detail="Invalid ID format")
-    
     result = db.incidents.update_one(
         {"_id": ObjectId(incident_id)},
         {"$set": {"status": "resolved"}}
     )
-    
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Incident not found")
-        
     return {"message": "Incident resolved"}
+
+
+class StatusUpdate(BaseModel):
+    status: str
+
+
+@app.patch("/incidents/{incident_id}/status")
+async def update_incident_status(incident_id: str, body: StatusUpdate):
+    """Updates incident status (pending, in-progress, resolved)."""
+    if not bson.objectid.ObjectId.is_valid(incident_id):
+        raise HTTPException(status_code=400, detail="Invalid ID format")
+    result = db.incidents.update_one(
+        {"_id": ObjectId(incident_id)},
+        {"$set": {"status": body.status}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return {"message": "Status updated", "status": body.status}
 
 @app.get("/incidents/{incident_id}")
 async def get_incident_detail(incident_id: str):
@@ -234,7 +281,7 @@ async def get_incident_detail(incident_id: str):
 # @app.get("/incidents/feed")
 # async def get_incident_feed():
 #     # Only show incidents that haven't been resolved yet
-#     query = {"status": "active"} 
+#     query = {"status": {"$ne": "resolved"}} 
 #     incidents = list(db.incidents.find(query).sort("final_score", -1))
     
 #     for inc in incidents:

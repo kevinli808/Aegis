@@ -3,6 +3,7 @@ import { Mic, FileText, SirenIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { LiveMap } from './LiveMap'
 import { DisasterUpdates } from './DisasterUpdates'
+import { API_BASE } from '../config'
 
 interface HelpRequest {
   id: string
@@ -38,7 +39,7 @@ export function LandingPage() {
 
   const fetchRequests = async () => {
     try {
-      const response = await fetch('http://localhost:8000/incidents', {
+      const response = await fetch(`${API_BASE}/incidents`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -87,7 +88,7 @@ export function LandingPage() {
     }
   }
 
-  const activeRequests = requests.filter(r => r.status === 'active')
+  const activeRequests = requests.filter(r => r.status !== 'resolved')
   const peopleAffected = activeRequests.reduce((sum, r) => sum + (parseInt(r.numberOfPeople, 10) || 1), 0)
 
   return (

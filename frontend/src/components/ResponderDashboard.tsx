@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Clock, AlertTriangle, Phone, Shield, Search, ChevronDown, List } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { API_BASE } from '../config';
 import { LiveMap } from './LiveMap';
 import { BackToHomeButton } from './BackToHomeButton';
 import { Drawer } from './Drawer';
@@ -48,22 +48,42 @@ export function ResponderDashboard() {
     filterRequests();
   }, [requests, searchQuery, statusFilter]);
 
+  const mapMongoToHelpRequest = (req: Record<string, unknown>): HelpRequest => {
+    const loc = req.location as { type?: string; coordinates?: number[] } | undefined
+    const hasCoords = loc?.type === 'Point' && Array.isArray(loc?.coordinates)
+    return {
+    id: String(req._id ?? ''),
+    name: String(req.name ?? ''),
+    phone: String(req.phone ?? ''),
+    location: hasCoords && loc?.coordinates
+      ? `${(loc.coordinates[1] ?? 0).toFixed(4)}, ${(loc.coordinates[0] ?? 0).toFixed(4)}`
+      : String(req.location ?? req.city ?? req.province ?? ''),
+    city: String(req.city ?? ''),
+    province: String(req.province ?? ''),
+    postalCode: String(req.postalCode ?? ''),
+    latitude: hasCoords && loc?.coordinates ? String(loc.coordinates[1] ?? '') : '',
+    longitude: hasCoords && loc?.coordinates ? String(loc.coordinates[0] ?? '') : '',
+    situation: String(req.situation ?? req.type ?? req.safety_status ?? ''),
+    medicalConditions: String(req.medicalConditions ?? (Array.isArray(req.symptoms) ? req.symptoms.join(', ') : '')),
+    immediacy: String(req.immediacy ?? ''),
+    isChild: Boolean(req.isChild ?? false),
+    hasMobilityLimitations: Boolean(req.hasMobilityLimitations ?? false),
+    environmentalHazards: String(req.environmentalHazards ?? ''),
+    numberOfPeople: String(req.numberOfPeople ?? req.num_people ?? '1'),
+    priorityScore: Number(req.priorityScore ?? req.score ?? req.final_score ?? 0),
+    timestamp: String(req.timestamp ?? ''),
+    status: String(req.status ?? 'pending'),
+  }
+  };
+
   const fetchRequests = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/get-requests`,
-        {
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
-        }
-      );
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
-      const filtered = (data.requests || []).filter((req: HelpRequest) => {
-        const testNames = ['Kevin Li'];
-        const testSituations = ['i might actually die from a snake', 'helpppp', 'hj'];
-        return !testNames.includes(req.name) && !testSituations.includes(req.situation);
+      const response = await fetch(`${API_BASE}/incidents`, {
+        headers: { 'Content-Type': 'application/json' },
       });
-      setRequests(filtered);
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = (await response.json()) as Record<string, unknown>[];
+      setRequests((data || []).map(mapMongoToHelpRequest));
     } catch (error) {
       console.error('Error fetching help requests:', error);
     } finally {
@@ -89,20 +109,12 @@ export function ResponderDashboard() {
 
   const handleStatusUpdate = async (requestId: string, newStatus: string) => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/update-status`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ requestId, status: newStatus, responderName: 'Responder' }),
-        }
-      );
+      const response = await fetch(`${API_BASE}/incidents/${requestId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
       if (response.ok) {
-        const data = await response.json();
-        alert(`Status updated! ${data.responders?.length || 0} responder(s) on this incident.`);
         fetchRequests();
       } else {
         alert('Failed to update status');
@@ -129,10 +141,10 @@ export function ResponderDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-amber-100 text-amber-800';
-      case 'in-progress': return 'bg-sky-100 text-sky-800';
-      case 'resolved': return 'bg-emerald-100 text-emerald-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-amber-100 text-amber-900 border border-amber-300';
+      case 'in-progress': return 'bg-sky-100 text-sky-800 border border-sky-300';
+      case 'resolved': return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+      default: return 'bg-gray-100 text-gray-800 border border-gray-300';
     }
   };
 

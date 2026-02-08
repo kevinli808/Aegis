@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield, AlertCircle } from 'lucide-react'
 import { LiveMap } from './LiveMap'
-import { projectId, publicAnonKey } from '../utils/supabase/info'
+import { API_BASE } from '../config'
 
 interface HelpRequest {
   id: string
@@ -36,22 +36,42 @@ export function IndexChoice() {
     return () => clearInterval(interval)
   }, [])
 
+  const mapMongoToHelpRequest = (req: Record<string, unknown>): HelpRequest => {
+    const loc = req.location as { type?: string; coordinates?: number[] } | undefined
+    const hasCoords = loc?.type === 'Point' && Array.isArray(loc?.coordinates)
+    return {
+    id: String(req._id ?? ''),
+    name: String(req.name ?? ''),
+    phone: String(req.phone ?? ''),
+    location: hasCoords && loc?.coordinates
+      ? `${(loc.coordinates[1] ?? 0).toFixed(4)}, ${(loc.coordinates[0] ?? 0).toFixed(4)}`
+      : String(req.location ?? req.city ?? req.province ?? ''),
+    city: String(req.city ?? ''),
+    province: String(req.province ?? ''),
+    postalCode: String(req.postalCode ?? ''),
+    latitude: hasCoords && loc?.coordinates ? String(loc.coordinates[1] ?? '') : '',
+    longitude: hasCoords && loc?.coordinates ? String(loc.coordinates[0] ?? '') : '',
+    situation: String(req.situation ?? req.type ?? req.safety_status ?? ''),
+    medicalConditions: String(req.medicalConditions ?? (Array.isArray(req.symptoms) ? req.symptoms.join(', ') : '')),
+    immediacy: String(req.immediacy ?? ''),
+    isChild: Boolean(req.isChild ?? false),
+    hasMobilityLimitations: Boolean(req.hasMobilityLimitations ?? false),
+    environmentalHazards: String(req.environmentalHazards ?? ''),
+    numberOfPeople: String(req.numberOfPeople ?? req.num_people ?? '1'),
+    priorityScore: Number(req.priorityScore ?? req.score ?? req.final_score ?? 0),
+    timestamp: String(req.timestamp ?? ''),
+    status: String(req.status ?? 'pending'),
+  }
+  };
+
   const fetchRequests = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/get-requests`,
-        {
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
-        }
-      )
-      if (!response.ok) throw new Error('Failed to fetch')
-      const data = await response.json()
-      const filtered = (data.requests || []).filter((req: HelpRequest) => {
-        const testNames = ['Kevin Li']
-        const testSituations = ['i might actually die from a snake', 'helpppp', 'hj']
-        return !testNames.includes(req.name) && !testSituations.includes(req.situation)
+      const response = await fetch(`${API_BASE}/incidents`, {
+        headers: { 'Content-Type': 'application/json' },
       })
-      setRequests(filtered)
+      if (!response.ok) throw new Error('Failed to fetch')
+      const data = (await response.json()) as Record<string, unknown>[]
+      setRequests((data || []).map(mapMongoToHelpRequest))
     } catch (err) {
       console.error('Error fetching requests:', err)
     }

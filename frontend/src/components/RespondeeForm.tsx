@@ -10,6 +10,7 @@ import {
   Heart,
 } from "lucide-react";
 import { BackToHomeButton } from "./BackToHomeButton";
+import { API_BASE } from "../config";
 import { VoiceCall } from "./VoiceCall";
 
 export type ImmediacyLevel = "low" | "moderate" | "high" | "critical";
@@ -379,9 +380,21 @@ export function RespondeeForm() {
             parseFloat(formData.latitude) || 0,
           ],
         },
+        name: formData.name,
+        phone: formData.phone,
+        situation: formData.situation,
+        city: formData.city,
+        province: formData.province,
+        postalCode: formData.postalCode,
+        medicalConditions: formData.medicalConditions,
+        immediacy: formData.immediacy,
+        isChild: formData.isChild,
+        hasMobilityLimitations: formData.hasMobilityLimitations,
+        environmentalHazards: formData.environmentalHazards,
+        numberOfPeople: formData.numberOfPeople,
       };
 
-      const response = await fetch("http://localhost:8000/report", {
+      const response = await fetch(`${API_BASE}/report`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
