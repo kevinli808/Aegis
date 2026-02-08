@@ -5,6 +5,8 @@ from crud import IncidentManager
 from gemini_service import get_chat_response
 from datetime import datetime
 from bson import ObjectId
+from pydantic import BaseModel, Field
+from typing import List
 import bson
 import math
 
@@ -86,54 +88,42 @@ def run_scoring_logic(data):
 
 
 # --- ROUTES ---
+class IncidentReport(BaseModel):
+    # These must match the keys in your JavaScript 'payload' object
+    type: str
+    num_people: int
+    symptoms: List[str]
+    safety_status: str
+    location: dict
 
 @app.get("/")
 async def heartbeat():
     return {"status": "online", "message": "Aegis Backend is running"}
 
 @app.post("/report")
-async def create_report(request: Request, payload: dict = Body(...)):
-    """
-    Ingests incident data, runs scoring logic, and saves to MongoDB.
-    """
-    try:
-        # 1. Parse JSON body
-        data = await request.json()
-        
-        # 2. Run your scoring logic function
-        # Ensure this function accepts the 'data' dictionary
-        analysis = run_scoring_logic(data)
-        
-        # 3. Safe extraction of GeoJSON coordinates
-        # Your seeder sends: {"location": {"type": "Point", "coordinates": [lon, lat]}}
-        location_data = data.get("location", {})
-        
-        # 4. Build the document for MongoDB
-        new_report = {
-            "type": data.get("type", "unknown"),
-            "num_people": data.get("num_people", 1),
-            "symptoms": data.get("symptoms", []),
-            "safety_status": data.get("safety_status", "unknown"),
-            "status": "active",
-            "priority": analysis.get("priority", 3),
-            "final_score": analysis.get("score", 0),
-            "location": location_data,
-            "timestamp": datetime.now()
-        }
-        
-        # 5. Insert into Database
-        result = db.incidents.insert_one(new_report)
-        
-        return {
-            "status": "success", 
-            "id": str(result.inserted_id), 
-            "priority": new_report["priority"]
-        }
+async def create_report(report: IncidentReport): # Change 'payload: dict' to 'report: IncidentReport'
+    # Convert Pydantic model to a Python dictionary
+    data = report.model_dump()
     
-    except Exception as e:
-        # This will print the exact error line in your Uvicorn terminal
-        print(f"Error logic: {e}")
-        raise HTTPException(status_code=400, detail=f"Invalid data format: {str(e)}")
+    # 1. Run your scoring logic
+    scoring_results = run_scoring_logic(data)
+    
+    # 2. Combine the data with scores and metadata
+    full_report = {
+        **data,
+        **scoring_results,
+        "status": "active",
+        "timestamp": datetime.now()
+    }
+    
+    # 3. Save to MongoDB
+    result = db.incidents.insert_one(full_report)
+    
+    return {
+        "status": "success", 
+        "id": str(result.inserted_id), 
+        "priority": scoring_results["priority"]
+    }
 
 @app.get("/incidents/stats")
 async def get_stats():

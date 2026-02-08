@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 
 interface HelpRequest {
@@ -19,13 +19,18 @@ interface LiveMapProps {
   requests: HelpRequest[]
   selectedRequest: HelpRequest | null
   onSelectRequest: (request: HelpRequest | null) => void
+  centerOnUser?: boolean
 }
 
-export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapProps) {
+const DEFAULT_CENTER: [number, number] = [56.1304, -106.3468]
+const DEFAULT_ZOOM = 4
+
+export function LiveMap({ requests, selectedRequest, onSelectRequest, centerOnUser = false }: LiveMapProps) {
   const mapRef = useRef<L.Map | null>(null)
   const markersRef = useRef<L.Marker[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
   const cssLoadedRef = useRef(false)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   const getMarkerColor = (score: number) => {
     if (score >= 80) return '#dc2626'
@@ -93,8 +98,8 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
 
       try {
         mapRef.current = L.map(containerRef.current, {
-          center: [56.1304, -106.3468],
-          zoom: 4,
+          center: DEFAULT_CENTER,
+          zoom: DEFAULT_ZOOM,
           zoomControl: false,
         })
         L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current)
@@ -104,7 +109,6 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
           maxZoom: 19,
         }).addTo(mapRef.current)
 
-        // Fix for Leaflet default icon path issue
         L.Icon.Default.mergeOptions({
           iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
           iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -133,7 +137,6 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
       try {
         if (link.parentNode) document.head.removeChild(link)
       } catch (e) {
-        // Link might already be removed
       }
       if (mapRef.current) {
         mapRef.current.remove()
@@ -141,6 +144,21 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
       }
     }
   }, [])
+
+  // Request geolocation and center map on user when centerOnUser is true
+  useEffect(() => {
+    if (!centerOnUser || !navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        setUserLocation({ lat: latitude, lng: longitude })
+        if (mapRef.current) {
+          mapRef.current.setView([latitude, longitude], 10, { animate: true })
+        }
+      },
+      () => { /* Silent fail - keep default center */ }
+    )
+  }, [centerOnUser])
 
   useEffect(() => {
     if (!mapRef.current) return
@@ -151,7 +169,8 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
     const validRequests = requests.filter(req => req.latitude && req.longitude && !isNaN(parseFloat(req.latitude)) && !isNaN(parseFloat(req.longitude)))
 
     if (validRequests.length === 0) {
-      mapRef.current.setView([56.1304, -106.3468], 4)
+      const center = userLocation ? [userLocation.lat, userLocation.lng] as [number, number] : DEFAULT_CENTER
+      mapRef.current.setView(center, userLocation ? 10 : DEFAULT_ZOOM)
       return
     }
 
@@ -172,6 +191,13 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
         return 'LOW'
       }
 
+      const addressDisplay =
+        request.location || request.city || request.province
+          ? [request.location, request.city, request.province].filter(Boolean).join(', ')
+          : !isNaN(lat) && !isNaN(lng)
+            ? `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+            : 'Unknown'
+
       marker.bindPopup(`
         <div style="min-width: 200px;">
           <h3 style="font-weight: bold; margin-bottom: 8px; font-size: 16px;">${request.name}</h3>
@@ -181,7 +207,7 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
             </span>
           </div>
           <p style="margin: 8px 0; font-size: 14px; color: #374151;"><strong>Status:</strong> ${request.status}</p>
-          <p style="margin: 8px 0; font-size: 14px; color: #374151;"><strong>Address:</strong> ${request.location}${request.city ? ', ' + request.city : ''}${request.province ? ', ' + request.province : ''}</p>
+          <p style="margin: 8px 0; font-size: 14px; color: #374151;"><strong>Location:</strong> ${addressDisplay}</p>
           <p style="margin: 8px 0; font-size: 14px; color: #374151; max-width: 250px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
             <strong>Situation:</strong> ${request.situation}
           </p>
@@ -200,6 +226,8 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
       bounds.push([lat, lng])
     })
 
+    if (userLocation) bounds.push([userLocation.lat, userLocation.lng])
+
     if (bounds.length > 0) {
       mapRef.current.fitBounds(bounds as any, { padding: [50, 50], maxZoom: 15 })
     }
@@ -208,7 +236,7 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
       const request = requests.find(r => r.id === requestId)
       if (request) onSelectRequest(request)
     }
-  }, [requests, onSelectRequest])
+  }, [requests, onSelectRequest, userLocation])
 
   useEffect(() => {
     if (!mapRef.current || !selectedRequest) return
