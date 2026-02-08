@@ -369,7 +369,7 @@ export function ResponderDashboard() {
           {/* FAB to open drawer */}
           <button
             onClick={() => setShowDrawer(true)}
-            className="fixed bottom-6 left-1/2 -tranneutral-x-1/2 z-[1050] flex items-center gap-2 px-6 py-3 rounded-full bg-sky-600 text-white font-medium shadow-lg hover:bg-sky-700"
+            className="fixed bottom-6 left-4 -tranneutral-x-1/2 z-[1050] flex items-center gap-2 px-6 py-3 rounded-lg bg-sky-600 text-white font-medium shadow-lg hover:bg-sky-700"
           >
             <List className="w-5 h-5" />
             Requests ({filteredRequests.length})

@@ -314,13 +314,11 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
                 <span>📍</span> {locationStatus}
               </p>
             )}
-            <div className="w-full rounded-lg overflow-hidden bg-slate-900 aspect-2/1 min-h-[200px] flex items-center justify-center">
-              {conversation ? (
+            {(mode === 'agent-speaking' || mode === 'user-speaking') && conversation ? (
+              <div className="w-full rounded-lg overflow-hidden bg-slate-900 aspect-2/1 min-h-[200px] flex items-center justify-center">
                 <SynthwaveVisualizer conversation={conversation} mode={mode} />
-              ) : (
-                <p className="text-slate-400 text-sm">Waiting for audio…</p>
-              )}
-            </div>
+              </div>
+            ) : null}
             <p className="text-sm font-medium text-gray-700">
               {mode === 'agent-speaking' && 'Agent speaking…'}
               {mode === 'user-speaking' && 'Your turn — speak now'}

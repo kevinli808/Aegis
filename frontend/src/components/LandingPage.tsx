@@ -3,7 +3,6 @@ import { Mic, FileText, SirenIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { LiveMap } from './LiveMap'
 import { DisasterUpdates } from './DisasterUpdates'
-import { projectId, publicAnonKey } from '../utils/supabase/info'
 
 interface HelpRequest {
   id: string
@@ -39,35 +38,57 @@ export function LandingPage() {
 
   const fetchRequests = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/get-requests`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        },
-      )
-
+      const response = await fetch('http://localhost:8000/incidents', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(`Failed to fetch requests: ${errorText}`)
       }
 
       const data = await response.json()
-      // Filter out test/example requests
-      const filteredRequests = (data.requests || []).filter((req: HelpRequest) => {
-        const testNames = ['Kevin Li']
-        const testSituations = ['i might actually die from a snake', 'helpppp', 'hj']
-        return !testNames.includes(req.name) && !testSituations.includes(req.situation)
-      })
-      setRequests(filteredRequests)
+
+      // Map MongoDB response to HelpRequest shape
+      const mappedRequests: HelpRequest[] = (data || []).map((req: any) => ({
+        id: req._id, // MongoDB's _id as id
+        name: req.name || '',
+        phone: req.phone || '',
+        location: req.location?.type === 'Point' && Array.isArray(req.location?.coordinates)
+          ? `${req.location.coordinates[1].toFixed(4)}, ${req.location.coordinates[0].toFixed(4)}`
+          : req.location?.display_name || req.city || req.province || '',
+        city: req.city || '',
+        province: req.province || '',
+        postalCode: req.postalCode || '',
+        latitude:
+          req.location && req.location.type === 'Point' && Array.isArray(req.location.coordinates)
+            ? String(req.location.coordinates[1])
+            : '',
+        longitude:
+          req.location && req.location.type === 'Point' && Array.isArray(req.location.coordinates)
+            ? String(req.location.coordinates[0])
+            : '',
+        situation: req.type || req.situation || req.safety_status || '',
+        medicalConditions: req.medicalConditions || (req.symptoms ? req.symptoms.join(', ') : ''),
+        immediacy: req.immediacy || '',
+        isChild: req.isChild ?? false,
+        hasMobilityLimitations: req.hasMobilityLimitations ?? false,
+        environmentalHazards: req.environmentalHazards || '',
+        numberOfPeople: req.numberOfPeople || (req.num_people ? String(req.num_people) : ''),
+        priorityScore: req.priorityScore ?? req.final_score ?? req.score ?? 0,
+        timestamp: req.timestamp || '',
+        status: req.status || '',
+      }));
+
+      setRequests(mappedRequests);
+
     } catch (error) {
       console.error('Error fetching help requests:', error)
     }
   }
 
-  const pendingRequests = requests.filter(r => r.status === 'pending')
-  const inProgressRequests = requests.filter(r => r.status === 'in-progress')
+  const activeRequests = requests.filter(r => r.status === 'active')
+  const peopleAffected = activeRequests.reduce((sum, r) => sum + (parseInt(r.numberOfPeople, 10) || 1), 0)
 
   return (
     <div className="min-h-screen bg-white">
@@ -85,7 +106,7 @@ export function LandingPage() {
         <DisasterUpdates />
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <div className="flex-1 sm:flex-[2] bg-red-700 text-white rounded-lg p-6 text-left sm:min-h-[220px]">
+          <div className="flex-1 sm:flex-[2] bg-red-700 text-white rounded-lg p-6 text-left sm:min-h-[220px] border border-gray-300">
             <div className="flex items-center gap-2 mb-6">
               <SirenIcon className="w-6 h-6" />
               <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
@@ -109,13 +130,13 @@ export function LandingPage() {
             </div>
           </div>
           <div className="flex flex-col gap-3 sm:gap-4 flex-1">
-            <div className="bg-yellow-100 rounded-lg p-3 sm:p-4 flex-1 flex flex-col justify-center">
-              <div className="text-2xl sm:text-3xl font-bold text-yellow-800">{pendingRequests.length}</div>
-              <div className="text-xs sm:text-sm text-yellow-800">Pending</div>
+            <div className="bg-yellow-100 rounded-lg p-3 sm:p-4 flex-1 flex flex-col justify-center border border-gray-300">
+              <div className="text-2xl sm:text-3xl font-bold text-yellow-800">{activeRequests.length}</div>
+              <div className="text-xs sm:text-sm text-yellow-800">Active Incidents</div>
             </div>
-            <div className="bg-blue-100 rounded-lg p-3 sm:p-4 flex-1 flex flex-col justify-center">
-              <div className="text-2xl sm:text-3xl font-bold text-blue-800">{inProgressRequests.length}</div>
-              <div className="text-xs sm:text-sm text-blue-800">In Progress</div>
+            <div className="bg-blue-100 rounded-lg p-3 sm:p-4 flex-1 flex flex-col justify-center border border-gray-300">
+              <div className="text-2xl sm:text-3xl font-bold text-blue-800">{peopleAffected}</div>
+              <div className="text-xs sm:text-sm text-blue-800">People Affected</div>
             </div>
           </div>
         </div>  
@@ -123,27 +144,27 @@ export function LandingPage() {
 
         <div className="mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Active Incidents Map</h2>
-          <div className="bg-white rounded-xl overflow-hidden border-2 border-gray-300 relative z-0">
+          <div className="bg-white rounded-xl overflow-hidden border border-gray-300 relative z-0">
             <div className="h-[400px] sm:h-[600px] relative">
-              <LiveMap requests={requests} selectedRequest={selectedRequest} onSelectRequest={setSelectedRequest} />
+              <LiveMap requests={requests} selectedRequest={selectedRequest} onSelectRequest={(r) => setSelectedRequest(r as HelpRequest | null)} centerOnUser />
             </div>
           </div>
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4 sm:gap-6 mb-8 relative z-10">
-          <Link to="/request-help" className="bg-red-700 text-white rounded-xl p-6 hover:bg-red-700 active:scale-95 transition-all text-left">
+          <Link to="/request-help" className="bg-red-700 text-white rounded-xl p-6 hover:bg-red-700 active:scale-95 transition-all text-left border border-gray-300">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
             </div>
             <p className="text-sm sm:text-base text-red-100">Submit help request</p>
           </Link>
 
-          <Link to="/responder" className="bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
+          <Link to="/responder" className="bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left border border-gray-300">
             <h3 className="text-xl sm:text-2xl font-bold mb-2">Responders</h3>
             <p className="text-sm sm:text-base text-sky-100">View full dashboard</p>
           </Link>
 
-          <Link to="/info" className="bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
+          <Link to="/info" className="bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left border border-gray-300">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-xl sm:text-2xl font-bold">Safety Info</h3>
             </div>
@@ -160,6 +181,25 @@ export function LandingPage() {
           </div>
         </div>
       </div>
+
+      <footer className="mt-12 bg-slate-900 text-gray-300 py-8 border-t border-slate-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <img src="/aegis-logo.png" alt="Aegis" className="w-8 h-8" />
+              <span className="font-semibold text-white">Aegis</span>
+            </div>
+            <nav className="flex flex-wrap gap-6">
+              <Link to="/request-help" className="hover:text-white transition-colors">Request Help</Link>
+              <Link to="/responder" className="hover:text-white transition-colors">Responders</Link>
+              <Link to="/info" className="hover:text-white transition-colors">Safety Info</Link>
+            </nav>
+          </div>
+          <div className="mt-6 pt-6 border-t border-slate-700 text-sm text-gray-400">
+            © {new Date().getFullYear()} Aegis. Help when it matters.
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

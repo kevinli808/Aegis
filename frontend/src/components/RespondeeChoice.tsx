@@ -61,7 +61,7 @@ export function IndexChoice() {
 
   return (
     <div className="min-h-screen px-4 sm:px-6 py-4 sm:py-6 flex flex-col items-center justify-center">
-      <div className="w-full max-w-7xl text-center">
+      <div className="w-full max-w-7xl text-center ">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Aegis</h1>
         <p className="text-gray-600 text-sm sm:text-base mb-6">Help when it matters.</p>
 
