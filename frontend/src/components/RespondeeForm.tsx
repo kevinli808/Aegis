@@ -321,7 +321,7 @@ export function RespondeeForm() {
         }
         
         alert(message);
-        navigate('/');
+        navigate('/gemini-chat', { state: { formData } });
       } else {
         alert('Failed to submit request. Please try again.');
       }

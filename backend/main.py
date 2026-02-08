@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_db
 from crud import IncidentManager
+from gemini_service import get_chat_response
 from datetime import datetime
 from bson import ObjectId
 import bson
@@ -213,6 +214,42 @@ async def get_incident_detail(incident_id: str):
     
     doc["_id"] = str(doc["_id"])
     return doc
+
+@app.post("/chat/gemini")
+async def chat_with_gemini(request: Request):
+    """
+    Chat endpoint that communicates with Gemini API.
+    Expects: {
+        "user_message": str,
+        "conversation_history": list,
+        "form_data": dict (optional, for first message context),
+        "is_first_message": bool (optional, default False)
+    }
+    """
+    try:
+        payload = await request.json()
+        user_message = payload.get("user_message")
+        conversation_history = payload.get("conversation_history", [])
+        form_data = payload.get("form_data")
+        is_first_message = payload.get("is_first_message", False)
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="user_message is required")
+        
+        response = await get_chat_response(
+            conversation_history=conversation_history,
+            user_message=user_message,
+            form_data=form_data,
+            is_first_message=is_first_message
+        )
+        
+        return {"response": response}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Chat error: {e}")
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 # @app.get("/incidents/map/coordinates")
 # async def get_map_points():
