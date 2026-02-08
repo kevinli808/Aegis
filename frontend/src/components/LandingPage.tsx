@@ -121,7 +121,7 @@ export function LandingPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         {/* Hero + Official Updates side by side */}
         <section className="grid lg:grid-cols-12 gap-6 mb-6">
-          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-8 sm:p-10">
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-gray-300 p-8 sm:p-10">
             <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-4">
               Help when it matters.
             </h1>
@@ -144,7 +144,7 @@ export function LandingPage() {
               </Link>
               <Link
                 to="/request-help?input=form"
-                className="group flex items-start gap-4 p-5 bg-white border-2 border-slate-200 hover:border-sky-200 rounded-xl transition-all hover:bg-sky-50/50"
+                className="group flex items-start gap-4 p-5 bg-white border-2 border-gray-300 hover:border-sky-200 rounded-xl transition-all hover:bg-sky-50/50"
               >
                 <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-sky-100">
                   <FileText className="w-6 h-6 text-slate-600 group-hover:text-sky-600" />
@@ -157,14 +157,14 @@ export function LandingPage() {
             </div>
           </div>
 
-          <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-6">
+          <div className="lg:col-span-5 bg-white rounded-2xl border border-gray-300 p-6">
             <DisasterUpdates />
           </div>
         </section>
 
         {/* Stats - 2 by 2 */}
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-white rounded-xl border border-gray-300 p-5">
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-2xl font-bold text-slate-900">{activeRequests.length}</span>
               <span className="text-slate-500">active incidents</span>
@@ -184,7 +184,7 @@ export function LandingPage() {
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-white rounded-xl border border-gray-300 p-5">
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-2xl font-bold text-slate-900">{peopleAffected}</span>
               <span className="text-slate-500">people needing help</span>
@@ -214,7 +214,7 @@ export function LandingPage() {
 
         {/* Map - full width */}
         <section className="mb-12">
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-300 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
               <h2 className="font-semibold text-slate-900">Situational awareness</h2>
               <p className="text-slate-500 text-sm mt-0.5">Real-time help requests on the map</p>
@@ -246,7 +246,7 @@ export function LandingPage() {
           </Link>
           <Link
             to="/info"
-            className="flex items-center justify-between p-6 bg-white border border-slate-200 rounded-2xl hover:border-slate-300 transition-all group"
+            className="flex items-center justify-between p-6 bg-white border border-gray-300 rounded-2xl hover:border-slate-300 transition-all group"
           >
             <div>
               <h3 className="font-semibold text-lg text-slate-900 mb-1">Safety guidelines</h3>

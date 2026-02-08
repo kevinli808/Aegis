@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 
 export function Footer() {
   return (
-    <footer className="mt-12 bg-white/80 backdrop-blur-md border-t border-slate-200">
+    <footer className="mt-12 bg-white/80 backdrop-blur-md border-t border-gray-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <Link to="/" className="flex items-center gap-3 group">
@@ -15,7 +15,7 @@ export function Footer() {
             <Link to="/responder" className="text-sm font-medium text-slate-600 hover:text-sky-600 transition-colors">Responder Dashboard</Link>
           </nav>
         </div>
-        <div className="mt-6 pt-6 border-t border-slate-200 text-sm text-slate-500">
+        <div className="mt-6 pt-6 border-t border-gray-300 text-sm text-slate-500">
           © {new Date().getFullYear()} Aegis. Help when it matters.
         </div>
       </div>

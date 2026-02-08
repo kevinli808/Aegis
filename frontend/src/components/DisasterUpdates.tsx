@@ -69,7 +69,7 @@ export function DisasterUpdates() {
       <h2 className="text-xl font-bold text-gray-900 mb-3">Official Updates</h2>
       <div className="space-y-3">
         {updates.length === 0 ? (
-          <div className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50 text-gray-600 text-sm flex items-center gap-2">
+          <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50 text-gray-600 text-sm flex items-center gap-2">
             <Info className="w-5 h-5 flex-shrink-0 text-gray-400" />
             No updates at this time. Check back later for official announcements.
           </div>

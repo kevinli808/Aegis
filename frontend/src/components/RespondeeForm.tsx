@@ -530,7 +530,7 @@ export function RespondeeForm() {
               <span className="text-xl sm:text-2xl font-bold">
                 Input by voice
               </span>
-              <span className="text-sm text-slate-200">
+              <span className="text-sm text-gray-300">
                 Speak to our AI assistant to submit your request
               </span>
             </button>
@@ -957,7 +957,7 @@ export function RespondeeForm() {
           </button>
         </form>
 
-        <div className="mt-4 sm:mt-6 bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4">
+        <div className="mt-4 sm:mt-6 bg-slate-50 border border-gray-300 rounded-xl p-3 sm:p-4">
           <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-base sm:text-lg">
             <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
             Crisis Tips While You Wait

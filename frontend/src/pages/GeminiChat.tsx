@@ -176,7 +176,7 @@ export default function GeminiChatPage() {
       </div>
 
       {/* Help Request Summary */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-300">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
 
@@ -230,7 +230,7 @@ export default function GeminiChatPage() {
                 className={`max-w-xs sm:max-w-md lg:max-w-lg px-4 py-3 rounded-lg ${
                   msg.role === 'user'
                     ? 'bg-blue-600 text-white rounded-br-none'
-                    : 'bg-white border border-gray-200 text-gray-900 rounded-bl-none'
+                    : 'bg-white border border-gray-300 text-gray-900 rounded-bl-none'
                 }`}
               >
                 <p className="text-sm sm:text-base whitespace-pre-wrap">
@@ -250,7 +250,7 @@ export default function GeminiChatPage() {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-white border border-gray-200 px-4 py-3 rounded-lg rounded-bl-none">
+              <div className="bg-white border border-gray-300 px-4 py-3 rounded-lg rounded-bl-none">
                 <Loader className="w-5 h-5 animate-spin text-blue-600" />
               </div>
             </div>
@@ -266,7 +266,7 @@ export default function GeminiChatPage() {
       </div>
 
       {/* Input Area */}
-      <div className="bg-white border-t border-gray-200 px-4 sm:px-6 py-4">
+      <div className="bg-white border-t border-gray-300 px-4 sm:px-6 py-4">
         <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto">
           <div className="flex gap-2">
             <input

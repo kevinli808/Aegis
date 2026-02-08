@@ -120,7 +120,7 @@ export function IndexChoice() {
           >
             <Shield className="w-12 h-12 sm:w-14 sm:h-14" />
             <span className="text-xl sm:text-2xl font-bold">I'm a responder</span>
-            <span className="text-sm text-slate-200">View incidents and provide assistance</span>
+            <span className="text-sm text-gray-300">View incidents and provide assistance</span>
           </Link>
         </div>
       </div>
