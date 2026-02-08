@@ -1,0 +1,21 @@
+.info-page {
+  padding: 0;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.info-page h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.info-desc {
+  color: #475569;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.info-page p {
+  color: #64748b;
+  margin: 0;
+}
