@@ -375,11 +375,7 @@ export function ResponderDashboard() {
               <LiveMap
                 requests={filteredRequests}
                 selectedRequest={selectedRequest}
-                onSelectRequest={(r) => {
-                const req = r ? requests.find(req => req.id === r.id) ?? null : null
-                setSelectedRequest(req)
-                if (req && window.innerWidth < 1024) setShowDrawer(true)
-              }}
+                onSelectRequest={(r) => setSelectedRequest(r ? requests.find(req => req.id === r.id) ?? null : null)}
               />
             </div>
           </div>
@@ -406,11 +402,7 @@ export function ResponderDashboard() {
                 <LiveMap
                   requests={filteredRequests}
                   selectedRequest={selectedRequest}
-                  onSelectRequest={(r) => {
-                const req = r ? requests.find(req => req.id === r.id) ?? null : null
-                setSelectedRequest(req)
-                if (req && window.innerWidth < 1024) setShowDrawer(true)
-              }}
+                  onSelectRequest={(r) => setSelectedRequest(r ? requests.find(req => req.id === r.id) ?? null : null)}
                 />
               </div>
             </div>

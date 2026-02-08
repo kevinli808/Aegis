@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Send, Loader, Home } from 'lucide-react';
+import { API_BASE } from '../config';
 
 interface FormData {
   name: string;
@@ -92,7 +93,7 @@ export default function GeminiChatPage() {
       }));
 
       // Call backend API
-      const response = await fetch('http://localhost:8000/chat/gemini', {
+      const response = await fetch(`${API_BASE}/chat/gemini`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

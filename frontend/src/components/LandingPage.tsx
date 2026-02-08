@@ -108,7 +108,7 @@ export function LandingPage() {
         <DisasterUpdates />
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <div className="flex-1 sm:flex-[2] bg-red-700 text-white rounded-lg p-6 text-left sm:min-h-[220px] border border-gray-300">
+          <div className="flex-1 sm:flex-2 bg-red-800/80 text-white rounded-lg p-6 text-left sm:min-h-[220px] border border-gray-300">
             <div className="flex items-center gap-2 mb-6">
               <SirenIcon className="w-6 h-6" />
               <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
@@ -117,14 +117,14 @@ export function LandingPage() {
             <div className="flex flex-col gap-3">
               <Link
                 to="/request-help?input=voice"
-                className="flex items-center gap-2 border-2 border-red-700 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
+                className="flex items-center gap-2 border-2 border-red-700 bg-red-600 text-white hover:bg-red-700/60 p-3 rounded-lg transition-colors text-left"
               >
                 <Mic className="w-5 h-5 text-white" />
                 <span className="font-semibold">Voice Call</span>
               </Link>
               <Link
                 to="/request-help?input=form"
-                className="flex items-center gap-2 border-2 border-red-700 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
+                className="flex items-center gap-2 border-2 border-red-700 bg-red-600 text-white hover:bg-red-700/60 p-3 rounded-lg transition-colors text-left"
               >
                 <FileText className="w-5 h-5 text-white" />
                 <span className="font-semibold">Form</span>
@@ -154,19 +154,19 @@ export function LandingPage() {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4 sm:gap-6 mb-8 relative z-10">
-          <Link to="/request-help" className="border-2 border-red-600 bg-red-700 text-white rounded-xl p-6 hover:bg-red-700 active:scale-95 transition-all text-left">
+          <Link to="/request-help" className="border-2 border-red-700 bg-red-600 text-white hover:bg-red-700 rounded-xl p-6 active:scale-95 transition-all text-left">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
             </div>
             <p className="text-sm sm:text-base text-red-100">Submit help request</p>
           </Link>
 
-          <Link to="/responder" className="border-2 border-zinc-600 bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
+          <Link to="/responder" className="border-2 border-zinc-500 bg-zinc-600 text-white rounded-xl p-6 hover:bg-zinc-800 active:scale-95 transition-all text-left">
             <h3 className="text-xl sm:text-2xl font-bold mb-2">Responders</h3>
             <p className="text-sm sm:text-base text-sky-100">View full dashboard</p>
           </Link>
 
-          <Link to="/info" className="border-2 border-zinc-600 bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
+          <Link to="/info" className="border-2 border-neutral-600 bg-neutral-800 text-white rounded-xl p-6 hover:bg-neutral-900 active:scale-95 transition-all text-left">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-xl sm:text-2xl font-bold">Safety Info</h3>
             </div>

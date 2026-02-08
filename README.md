@@ -1,23 +1,50 @@
 # Aegis
 A disaster response program useful for a post-disaster. Made for Hack the Coast 2026
 
-## Setup
+## Stack
+* **Frontend**: React + TypeScript + Vite
+* **Backend**: FastAPI + MongoDB
+* **AI Voice**: ElevenLabs Conversational AI
+* **Hosting**: Vultr (frontend & backend)
 
+## Local Setup
+
+### Frontend
 ```bash
 cd frontend && npm install && npm run dev
 ```
 
-## AI Call (ElevenLabs)
-
-Visit `/call` to start a voice conversation with an ElevenLabs AI agent. Add your agent ID to `frontend/.env`:
-
+Create `frontend/.env`:
 ```
+VITE_API_URL=http://localhost:8000
 VITE_ELEVENLABS_AGENT_ID=your-agent-id
 ```
 
-Get your agent ID from the [ElevenLabs dashboard](https://elevenlabs.io/app/conversational-ai) → create an agent → copy the ID.
+### Backend
+See [Quick Start](#-quick-start) below.
+
+## ElevenLabs Voice Call
+
+Visit `/call` or use **Voice Call** from the "Need Help?" flow to speak with an AI agent. The agent collects your situation and location for responders.
+
+**Setup:**
+1. Create an agent at [ElevenLabs Conversational AI](https://elevenlabs.io/app/conversational-ai)
+2. Copy the agent ID and add to `frontend/.env`:
+   ```
+   VITE_ELEVENLABS_AGENT_ID=agent_xxxxxxxx
+   ```
 
 The call log shows the full conversation transcript and persists after the call ends.
+
+## Vultr Production
+
+Frontend and backend are hosted on Vultr. Configure the frontend to point at your API:
+
+```
+VITE_API_URL=http://YOUR_VULTR_IP/api
+```
+
+Replace `YOUR_VULTR_IP` with your server IP (e.g. `149.28.10.116`).
 
 # 🛡️ Aegis Backend
 
@@ -41,7 +68,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install fastapi uvicorn pymongo motor python-dotenv
+pip install -r requirements.txt
 ```
 ### 3. Environment Setup
 

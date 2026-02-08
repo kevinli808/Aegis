@@ -3,10 +3,6 @@
   background-color: #f8fafc;
 }
 
-button {
-  cursor: pointer;
-}
-
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

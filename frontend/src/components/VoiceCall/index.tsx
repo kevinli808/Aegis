@@ -170,7 +170,7 @@ interface VoiceCallProps {
   onCallEnd?: (transcript: string[]) => void
 }
 
-export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, onLocationUpdate, onCallEnd }: VoiceCallProps) {
+export function VoiceCall({ title = 'Aegis AI Call', embedded: _embedded = false, onBack: _onBack, onLocationUpdate, onCallEnd }: VoiceCallProps) {
   const [status, setStatus] = useState<CallStatus>('idle')
   const [mode, setMode] = useState<ConversationMode>('listening')
   const [error, setError] = useState<string | null>(null)
