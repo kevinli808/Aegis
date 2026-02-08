@@ -72,13 +72,16 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       <div className="bg-slate-900 text-white py-6 sm:py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-3">Aegis</h1>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-left">
+          <Link to="/" className="flex items-center gap-3 mb-3 text-white hover:text-white/90">
+            <h1 className="text-4xl sm:text-5xl font-bold">Aegis</h1>
+            <img src="/original-logo.png" alt="Aegis" className="w-10 h-10 sm:w-12 sm:h-12" />
+          </Link>
           <p className="text-lg sm:text-xl text-gray-300">Free disaster response coordination</p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 text-left">
         <DisasterUpdates />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -112,21 +115,21 @@ export function LandingPage() {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4 sm:gap-6 mb-8 relative z-10">
-          <Link to="/responder" className="bg-blue-600 text-white rounded-xl p-6 hover:bg-blue-700 active:scale-95 transition-all text-center">
+          <Link to="/responder" className="bg-blue-600 text-white rounded-xl p-6 hover:bg-blue-700 active:scale-95 transition-all text-left">
             <h3 className="text-xl sm:text-2xl font-bold mb-2">Responders</h3>
             <p className="text-sm sm:text-base text-blue-100">View full dashboard</p>
           </Link>
 
-          <Link to="/request-help" className="bg-red-600 text-white rounded-xl p-6 hover:bg-red-700 active:scale-95 transition-all text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
+          <Link to="/request-help" className="bg-red-600 text-white rounded-xl p-6 hover:bg-red-700 active:scale-95 transition-all text-left">
+            <div className="flex items-center gap-2 mb-2">
               <AlertCircle className="w-6 h-6" />
               <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
             </div>
             <p className="text-sm sm:text-base text-red-100">Submit help request</p>
           </Link>
 
-          <Link to="/info" className="bg-gray-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
+          <Link to="/info" className="bg-gray-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
+            <div className="flex items-center gap-2 mb-2">
               <Info className="w-6 h-6" />
               <h3 className="text-xl sm:text-2xl font-bold">Safety Info</h3>
             </div>

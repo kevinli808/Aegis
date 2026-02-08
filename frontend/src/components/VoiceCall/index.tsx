@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Conversation } from '@elevenlabs/client'
 import { ArrowLeft } from 'lucide-react'
-import './VoiceCall.css'
 
 const AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID ?? ''
 
@@ -165,7 +164,7 @@ function SynthwaveVisualizer({
   return (
     <canvas
       ref={canvasRef}
-      className="voice-waveform"
+      className="block w-full h-full"
       width={640}
       height={320}
     />
@@ -260,81 +259,93 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
   }, [conversation])
 
   return (
-    <div className={`voice-call ${embedded ? 'voice-call--embedded' : ''}`}>
-      <h2 className="mb-2">{title}</h2>
-      <p className="voice-call-desc">Speak to our AI assistant to submit your help request</p>
+    <div
+      className={`flex flex-col max-w-full mx-auto gap-4 pb-24 sm:pb-4 ${
+        embedded ? 'px-3 py-2' : 'px-4 py-3 sm:p-6'
+      }`}
+    >
+      {/* Header - compact */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="flex-1 min-w-0">
+          <h2 className="m-0 text-base font-semibold text-slate-800 sm:text-lg">{title}</h2>
+          <p className="mt-0.5 text-xs text-slate-500">Describe your situation. We'll collect your info and share your location with responders automatically.</p>
+        </div>
+      </div>
 
-      <div className="voice-call-controls">
-        {onBack && (
-          <button
-            type="button"
-            className="voice-call-btn back"
-            onClick={onBack}
-            disabled={status === 'connecting' || status === 'connected'}
-          >
-            <ArrowLeft className="w-4 h-4 inline-block mr-1 align-middle" />
-            Back to form
-          </button>
+      {/* Main content - no forced stretch */}
+      <div className="flex flex-col items-center gap-3 shrink-0">
+        {!AGENT_ID && (
+          <p className="bg-slate-100 p-3 rounded-xl text-sm m-0 border border-slate-200 w-full">
+            Set <code className="bg-slate-200 px-1 py-0.5 rounded text-xs">VITE_ELEVENLABS_AGENT_ID</code> in{' '}
+            <code className="bg-slate-200 px-1 py-0.5 rounded text-xs">.env</code> (get it from{' '}
+            <a href="https://elevenlabs.io/app/conversational-ai" target="_blank" rel="noreferrer" className="text-blue-600">
+              ElevenLabs dashboard
+            </a>
+            )
+          </p>
         )}
+
+        {error && <p className="text-red-600 m-0 text-sm">{error}</p>}
+
+        {status === 'connecting' && (
+          <div className="flex flex-col items-center gap-2 py-4">
+            <div className="w-12 h-12 rounded-full bg-green-500 animate-pulse" />
+            <p className="m-0 text-sm font-medium text-slate-700">Connecting…</p>
+            <p className="m-0 text-xs text-slate-500">Allow microphone when prompted</p>
+          </div>
+        )}
+
+        {status === 'connected' && (
+          <div className="w-full flex flex-col items-center gap-3">
+            {locationStatus && (
+              <p className="m-0 text-xs text-slate-500 flex items-center gap-1">
+                <span>📍</span> {locationStatus}
+              </p>
+            )}
+            <div className="w-full max-w-[320px] sm:max-w-[480px] rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 aspect-[2/1]">
+              <SynthwaveVisualizer conversation={conversation} mode={mode} />
+            </div>
+            <p className="m-0 text-sm font-medium text-slate-600">
+              {mode === 'agent-speaking' && 'Agent speaking…'}
+              {mode === 'user-speaking' && 'Your turn — speak now'}
+              {mode === 'listening' && 'Listening…'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Call button - fixed at bottom on mobile */}
+      <div className="fixed bottom-0 left-0 right-0 z-10 shrink-0 bg-white border-t border-slate-200 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] px-4 sm:static sm:border-0 sm:pt-0 sm:pb-0 sm:bg-transparent">
         {status === 'idle' && (
           <button
             type="button"
-            className="voice-call-btn start"
+            className="flex items-center justify-center gap-2 w-full min-h-12 px-5 py-3 text-base font-semibold border-none rounded-xl cursor-pointer bg-green-500 text-white hover:bg-green-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed sm:max-w-56 sm:mx-auto"
             onClick={startCall}
             disabled={!AGENT_ID}
           >
+            <span className="text-lg">📞</span>
             Start call
           </button>
         )}
         {(status === 'connecting' || status === 'connected') && (
           <button
             type="button"
-            className="voice-call-btn end"
+            className="flex items-center justify-center gap-2 w-full min-h-12 px-5 py-3 text-base font-semibold border-none rounded-xl cursor-pointer bg-red-500 text-white hover:bg-red-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed sm:max-w-56 sm:mx-auto"
             onClick={endCall}
             disabled={status === 'connecting'}
           >
+            <span className="text-lg">📵</span>
             End call
           </button>
         )}
       </div>
 
-      {!AGENT_ID && (
-        <p className="voice-call-setup">
-          Set <code>VITE_ELEVENLABS_AGENT_ID</code> in <code>.env</code> (get it from{' '}
-          <a href="https://elevenlabs.io/app/conversational-ai" target="_blank" rel="noreferrer">
-            ElevenLabs dashboard
-          </a>
-          )
-        </p>
-      )}
-
-      {error && <p className="voice-call-error">{error}</p>}
-
-      {status === 'connecting' && (
-        <p className="voice-call-status">Connecting… Allow microphone access when prompted.</p>
-      )}
-      {status === 'connected' && (
-        <>
-          {locationStatus && (
-            <p className="voice-call-status text-sm text-gray-600 mb-2">
-              📍 {locationStatus}
-            </p>
-          )}
-          <div className="voice-call-waveform-wrap">
-            <SynthwaveVisualizer conversation={conversation} mode={mode} />
-          </div>
-          <p className="voice-call-status mode">
-            {mode === 'agent-speaking' && 'Agent speaking…'}
-            {mode === 'user-speaking' && 'Your turn — speak now'}
-          </p>
-        </>
-      )}
-
-      <div className="voice-call-transcript">
-        <h3>Call log</h3>
-        <div className="transcript-lines">
+      {/* Transcript - only show when there's content or call is active */}
+      <div className={`shrink-0 pt-3 border-t border-slate-200 ${status === 'idle' && transcript.length === 0 ? 'opacity-60' : ''}`}>
+        <h3 className="m-0 mb-1.5 text-xs font-semibold text-slate-600">Call log</h3>
+        <div className={`max-h-20 overflow-y-auto text-xs leading-normal overscroll-contain sm:max-h-28 ${embedded ? 'max-h-16' : ''}`}>
           {transcript.length === 0 ? (
-            <p className="transcript-empty">
+            <p className="text-slate-400 italic m-0 text-xs">
               {status === 'idle' && 'Start a call to see the log.'}
               {status === 'connecting' && 'Connecting…'}
               {status === 'connected' && 'Conversation will appear here.'}
@@ -342,7 +353,7 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
             </p>
           ) : (
             transcript.map((line, i) => (
-              <div key={i} className="transcript-line">
+              <div key={i} className={`mb-1 break-words ${i % 2 === 0 ? 'text-slate-800' : 'text-slate-600'}`}>
                 {line}
               </div>
             ))

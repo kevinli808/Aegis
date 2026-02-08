@@ -2,9 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
-import App from './App.tsx'
 import CallPage from './pages/Call'
-import ProtectedLayout from './layouts/ProtectedLayout'
 import { AuthProvider, MongoDBProvider } from './providers'
 
 // New UI components (Disaster Response UI)
@@ -22,18 +20,14 @@ createRoot(document.getElementById('root')!).render(
       <MongoDBProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<App />}>
-              <Route index element={<IndexChoice />} />
-              <Route path="dashboard" element={<LandingPage />} />
-              <Route path="responder" element={<ResponderDashboard />} />
-              <Route path="request-help" element={<RespondeeForm />} />
-              <Route path="info" element={<DisasterInfo />} />
-              <Route path="admin">
-                <Route path="login" element={<AdminLogin />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-              </Route>
-              <Route path="call" element={<CallPage />} />
-            </Route>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<LandingPage />} />
+            <Route path="/responder" element={<ResponderDashboard />} />
+            <Route path="/request-help" element={<RespondeeForm />} />
+            <Route path="/info" element={<DisasterInfo />} />
+            <Route path="/call" element={<CallPage />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Routes>
         </BrowserRouter>
       </MongoDBProvider>

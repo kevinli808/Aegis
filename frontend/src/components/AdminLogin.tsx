@@ -83,7 +83,7 @@ export function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="min-h-screen">
       <div className="max-w-md mx-auto px-4 py-8">
         <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6">
           <ArrowLeft className="w-5 h-5" />
