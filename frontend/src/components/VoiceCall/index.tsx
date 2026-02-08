@@ -341,7 +341,7 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
           {(status === 'connecting' || status === 'connected') && (
             <button
               type="button"
-              className="flex items-center justify-center gap-2 w-full sm:w-auto min-w-[200px] min-h-12 px-6 py-3 text-base font-semibold rounded-xl border-none cursor-pointer bg-red-500 text-white hover:bg-red-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto min-w-[200px] min-h-12 px-6 py-3 text-base font-semibold rounded-xl border-none cursor-pointer bg-orange-600 text-white hover:bg-orange-700 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
               onClick={endCall}
               disabled={status === 'connecting'}
             >

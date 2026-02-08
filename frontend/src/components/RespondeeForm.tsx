@@ -223,11 +223,11 @@ export function RespondeeForm() {
             <button
               type="button"
               onClick={handleInputByVoice}
-              className="bg-blue-600 text-white rounded-xl p-6 sm:p-8 hover:bg-blue-700 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
+              className="bg-slate-700 text-white rounded-xl p-6 sm:p-8 hover:bg-slate-800 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
             >
               <Mic className="w-12 h-12 sm:w-14 sm:h-14" />
               <span className="text-xl sm:text-2xl font-bold">Input by voice</span>
-              <span className="text-sm text-blue-100">Speak to our AI assistant to submit your request</span>
+              <span className="text-sm text-slate-200">Speak to our AI assistant to submit your request</span>
             </button>
             <button
               type="button"
@@ -315,7 +315,7 @@ export function RespondeeForm() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="Your name"
                 />
               </div>
@@ -327,7 +327,7 @@ export function RespondeeForm() {
                   value={formData.phone}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="Your contact number"
                 />
               </div>
@@ -339,7 +339,7 @@ export function RespondeeForm() {
                   value={formData.numberOfPeople}
                   onChange={handleChange}
                   min="1"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -358,7 +358,7 @@ export function RespondeeForm() {
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="123 Main Street, Apt 4B"
                 />
               </div>
@@ -370,7 +370,7 @@ export function RespondeeForm() {
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                     placeholder="Toronto"
                   />
                 </div>
@@ -380,7 +380,7 @@ export function RespondeeForm() {
                     name="province"
                     value={formData.province}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   >
                     <option value="">Select Province</option>
                     <option value="AB">Alberta</option>
@@ -406,7 +406,7 @@ export function RespondeeForm() {
                   name="postalCode"
                   value={formData.postalCode}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="A1A 1A1"
                   maxLength={7}
                 />
@@ -415,7 +415,7 @@ export function RespondeeForm() {
               <button
                 type="button"
                 onClick={getCurrentLocation}
-                className="w-full sm:w-auto bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 active:scale-95 transition-all font-medium text-sm"
+                className="w-full sm:w-auto bg-slate-100 text-slate-700 px-3 py-2 rounded-lg hover:bg-slate-200 active:scale-95 transition-all font-medium text-sm\"
               >
                 📍 Capture GPS Coordinates
               </button>
@@ -427,7 +427,7 @@ export function RespondeeForm() {
                     name="latitude"
                     value={formData.latitude}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-gray-50"
                     placeholder="Auto-filled"
                     readOnly
                   />
@@ -439,7 +439,7 @@ export function RespondeeForm() {
                     name="longitude"
                     value={formData.longitude}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent bg-gray-50"
                     placeholder="Auto-filled"
                     readOnly
                   />
@@ -462,7 +462,7 @@ export function RespondeeForm() {
                   onChange={handleChange}
                   required
                   rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="What is happening? What help do you need?"
                 />
               </div>
@@ -473,7 +473,7 @@ export function RespondeeForm() {
                   value={formData.medicalConditions}
                   onChange={handleChange}
                   rows={2}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="e.g., bleeding, unconscious, difficulty breathing"
                 />
               </div>
@@ -483,7 +483,7 @@ export function RespondeeForm() {
                   name="immediacy"
                   value={formData.immediacy}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                 >
                   <option value="low">Stable - Not escalating</option>
                   <option value="moderate">Moderate - Could worsen soon</option>
@@ -498,7 +498,7 @@ export function RespondeeForm() {
                   name="environmentalHazards"
                   value={formData.environmentalHazards}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                   placeholder="e.g., flood depth 3ft, near wildfire, structural damage"
                 />
               </div>
@@ -514,7 +514,7 @@ export function RespondeeForm() {
                   name="isChild"
                   checked={formData.isChild}
                   onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-5 h-5 text-slate-700 rounded focus:ring-2 focus:ring-slate-500"
                 />
                 <span className="text-gray-700 text-sm sm:text-base">Children present (under 18)</span>
               </label>
@@ -524,7 +524,7 @@ export function RespondeeForm() {
                   name="hasMobilityLimitations"
                   checked={formData.hasMobilityLimitations}
                   onChange={handleChange}
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-5 h-5 text-slate-700 rounded focus:ring-2 focus:ring-slate-500"
                 />
                 <span className="text-gray-700 text-sm sm:text-base">Mobility limitations or disabilities</span>
               </label>
@@ -534,18 +534,18 @@ export function RespondeeForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg"
+            className="w-full bg-slate-700 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Help Request'}
           </button>
         </form>
 
-        <div className="mt-4 sm:mt-6 bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4">
-          <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-base sm:text-lg">
+        <div className="mt-4 sm:mt-6 bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4">
+          <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-base sm:text-lg">
             <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
             Crisis Tips While You Wait
           </h3>
-          <ul className="space-y-2 text-xs sm:text-sm text-blue-900">
+          <ul className="space-y-2 text-xs sm:text-sm text-slate-700\">
             <li>• Stay calm and find a safe location if possible</li>
             <li>• Keep your phone charged and accessible</li>
             <li>• If injured, apply pressure to stop bleeding and avoid moving</li>

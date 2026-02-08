@@ -103,7 +103,7 @@ export function AdminLogin() {
               onClick={() => setIsSignup(false)}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                 !isSignup 
-                  ? 'bg-blue-600 text-white' 
+                  ? 'bg-slate-700 text-white' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -113,7 +113,7 @@ export function AdminLogin() {
               onClick={() => setIsSignup(true)}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                 isSignup 
-                  ? 'bg-blue-600 text-white' 
+                  ? 'bg-slate-700 text-white' 
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -185,7 +185,7 @@ export function AdminLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 active:scale-95 transition-all font-medium disabled:opacity-50"
+              className="w-full bg-slate-700 text-white py-3 rounded-lg hover:bg-slate-800 active:scale-95 transition-all font-medium disabled:opacity-50"
             >
               {isLoading ? 'Processing...' : (isSignup ? 'Create Admin Account' : 'Login')}
             </button>
