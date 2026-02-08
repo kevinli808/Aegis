@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { BackToHomeButton } from "./BackToHomeButton";
 import { API_BASE } from "../config";
+import { useToast } from "./Toast";
 import { VoiceCall } from "./VoiceCall";
 
 export type ImmediacyLevel = "low" | "moderate" | "high" | "critical";
@@ -50,6 +51,25 @@ const initialFormData: FormData = {
   environmentalHazards: "",
   numberOfPeople: "1",
 };
+
+/** Format phone as (XXX) XXX-XXXX; strips non-digits first */
+function formatPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+/** Extract digits from phone for validation/storage */
+function parsePhoneDigits(phone: string): string {
+  return phone.replace(/\D/g, "");
+}
+
+/** Validate phone has 10–11 digits (US/Canada) */
+function isValidPhone(phone: string): boolean {
+  const digits = parsePhoneDigits(phone);
+  return digits.length === 10 || (digits.length === 11 && digits.startsWith("1"));
+}
 
 /** Map province/state names to Canadian province codes */
 const PROVINCE_NAME_TO_CODE: Record<string, string> = {
@@ -221,7 +241,9 @@ export function RespondeeForm() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
   const [isLocationLoading, setIsLocationLoading] = useState<boolean>(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const hasAttemptedGeolocation = useRef(false);
+  const { success, error } = useToast();
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -231,6 +253,24 @@ export function RespondeeForm() {
     const { name, value, type } = e.target;
     const key = name as keyof FormData;
     if (!(key in initialFormData)) return;
+    setFieldErrors((prev) => ({ ...prev, [key]: "" }));
+
+    if (key === "phone") {
+      setFormData((prev) => ({ ...prev, phone: formatPhoneInput(value) }));
+      return;
+    }
+    if (key === "numberOfPeople") {
+      const num = value.replace(/\D/g, "").slice(0, 3);
+      const parsed = parseInt(num, 10);
+      if (num === "" || isNaN(parsed)) {
+        setFormData((prev) => ({ ...prev, numberOfPeople: "" }));
+      } else {
+        const clamped = Math.min(99, Math.max(1, parsed));
+        setFormData((prev) => ({ ...prev, numberOfPeople: String(clamped) }));
+      }
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [key]:
@@ -274,7 +314,7 @@ export function RespondeeForm() {
 
   const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
+      error("Geolocation is not supported by your browser.");
       return;
     }
     setIsLocationLoading(true);
@@ -285,29 +325,29 @@ export function RespondeeForm() {
           position.coords.longitude,
         ).finally(() => setIsLocationLoading(false));
       },
-      (error: GeolocationPositionError) => {
+      (geoError: GeolocationPositionError) => {
         setIsLocationLoading(false);
-        console.error("Error getting location:", error);
+        console.error("Error getting location:", geoError);
         let errorMessage = "Unable to get your location. ";
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
+        switch (geoError.code) {
+          case GeolocationPositionError.PERMISSION_DENIED:
             errorMessage +=
               "Please allow location access in your browser settings.";
             break;
-          case error.POSITION_UNAVAILABLE:
+          case GeolocationPositionError.POSITION_UNAVAILABLE:
             errorMessage += "Location information is unavailable.";
             break;
-          case error.TIMEOUT:
+          case GeolocationPositionError.TIMEOUT:
             errorMessage += "Location request timed out.";
             break;
           default:
             errorMessage += "Please enter your location manually.";
         }
-        alert(errorMessage);
+        error(errorMessage);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
-  }, [updateLocationFromCoords]);
+  }, [updateLocationFromCoords, error]);
 
   // Auto-request geolocation when form is shown
   useEffect(() => {
@@ -328,7 +368,7 @@ export function RespondeeForm() {
     setFormData((prev) => {
       const merged = { ...prev };
       if (parsed.name) merged.name = parsed.name;
-      if (parsed.phone) merged.phone = parsed.phone;
+      if (parsed.phone) merged.phone = formatPhoneInput(parsed.phone);
       if (parsed.situation) merged.situation = parsed.situation;
       if (parsed.medicalConditions)
         merged.medicalConditions = parsed.medicalConditions;
@@ -345,20 +385,35 @@ export function RespondeeForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !formData.name.trim() ||
-      !formData.phone.trim() ||
-      !formData.situation.trim()
-    ) {
-      alert(
-        "Please provide at least your name, phone number, and situation description.",
-      );
+    setFieldErrors({});
+    const errors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      errors.name = "Name is required";
+    }
+    if (!formData.phone.trim()) {
+      errors.phone = "Phone number is required";
+    } else if (!isValidPhone(formData.phone)) {
+      errors.phone = "Enter a valid 10-digit phone number";
+    }
+    if (!formData.situation.trim()) {
+      errors.situation = "Situation description is required";
+    }
+
+    const numPeople = parseInt(formData.numberOfPeople, 10);
+    if (formData.numberOfPeople && (isNaN(numPeople) || numPeople < 1 || numPeople > 99)) {
+      errors.numberOfPeople = "Enter a number between 1 and 99";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      error("Please fix the errors in the form.");
       return;
     }
     const lat = parseFloat(formData.latitude);
     const lng = parseFloat(formData.longitude);
     if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) {
-      alert(
+      error(
         'Please allow location access (GPS) or click "Use GPS" to capture your location. Responders need your coordinates to find you.',
       );
       return;
@@ -381,7 +436,7 @@ export function RespondeeForm() {
           ],
         },
         name: formData.name,
-        phone: formData.phone,
+        phone: parsePhoneDigits(formData.phone) || formData.phone,
         situation: formData.situation,
         city: formData.city,
         province: formData.province,
@@ -403,7 +458,7 @@ export function RespondeeForm() {
       if (response.status === 422) {
         const errorDetail = await response.json();
         console.error("Validation Error:", errorDetail);
-        alert("Format error: Check the console to see which field failed.");
+        error("Format error: Check the console to see which field failed.");
         return;
       }
 
@@ -420,15 +475,15 @@ export function RespondeeForm() {
           message += `\n\nYour address has been recorded. Responders will contact you at ${formData.phone}.`;
         }
 
-        alert(message);
+        success("Help request submitted successfully!");
         setSubmitSuccess(true);
         navigate("/gemini-chat", { state: { formData } });
       } else {
-        alert("Failed to submit request. Please try again.");
+        error("Failed to submit request. Please try again.");
       }
-    } catch (error) {
-      console.error("Error submitting help request:", error);
-      alert("Failed to submit request. Please try again.");
+    } catch (err) {
+      console.error("Error submitting help request:", err);
+      error("Failed to submit request. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -451,7 +506,7 @@ export function RespondeeForm() {
             <button
               type="button"
               onClick={handleInputByVoice}
-              className="bg-sky-600 text-white rounded-xl p-6 sm:p-8 py-8 sm:py-12  border-2 border-sky-500 hover:bg-sky-700 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
+              className="border-2 border-sky-100 bg-sky-600 text-white rounded-xl p-6 sm:p-8 py-8 sm:py-12 hover:bg-sky-700 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
             >
               <Mic className="w-12 h-12 sm:w-14 sm:h-14" />
               <span className="text-xl sm:text-2xl font-bold">
@@ -464,7 +519,7 @@ export function RespondeeForm() {
             <button
               type="button"
               onClick={handleInputByForm}
-              className="bg-white border-2 border-gray-300 text-gray-900 rounded-xl p-6 sm:p-8 hover:bg-gray-200 hover:border-gray-300 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
+              className="border-2 border-gray-100 bg-white text-gray-900 rounded-xl p-6 sm:p-8 hover:bg-gray-200 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
             >
               <FileText className="w-12 h-12 sm:w-14 sm:h-14 text-gray-600" />
               <span className="text-xl sm:text-2xl font-bold">
@@ -570,9 +625,18 @@ export function RespondeeForm() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
+                    fieldErrors.name ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="Your name"
+                  aria-invalid={!!fieldErrors.name}
+                  aria-describedby={fieldErrors.name ? "name-error" : undefined}
                 />
+                {fieldErrors.name && (
+                  <p id="name-error" className="text-red-600 text-xs mt-1">
+                    {fieldErrors.name}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -584,9 +648,20 @@ export function RespondeeForm() {
                   value={formData.phone}
                   onChange={handleChange}
                   required
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
-                  placeholder="Your contact number"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
+                    fieldErrors.phone ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="(555) 123-4567"
+                  aria-invalid={!!fieldErrors.phone}
+                  aria-describedby={fieldErrors.phone ? "phone-error" : undefined}
                 />
+                {fieldErrors.phone && (
+                  <p id="phone-error" className="text-red-600 text-xs mt-1">
+                    {fieldErrors.phone}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -594,13 +669,25 @@ export function RespondeeForm() {
                   <span className="text-gray-400 font-normal">(optional)</span>
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   name="numberOfPeople"
                   value={formData.numberOfPeople}
                   onChange={handleChange}
-                  min="1"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
+                    fieldErrors.numberOfPeople ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="1"
+                  minLength={1}
+                  maxLength={2}
+                  aria-invalid={!!fieldErrors.numberOfPeople}
+                  aria-describedby={fieldErrors.numberOfPeople ? "number-error" : undefined}
                 />
+                {fieldErrors.numberOfPeople && (
+                  <p id="number-error" className="text-red-600 text-xs mt-1">
+                    {fieldErrors.numberOfPeople}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -619,7 +706,7 @@ export function RespondeeForm() {
                   type="button"
                   onClick={getCurrentLocation}
                   disabled={isLocationLoading}
-                  className="w-max bg-slate-700 text-white px-4 py-3 rounded-lg hover:bg-slate-800 active:scale-95 transition-all font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-max border-2 border-slate-100 bg-slate-700 text-white px-4 py-3 rounded-lg hover:bg-slate-800 active:scale-95 transition-all font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {isLocationLoading
                     ? "Getting location…"
@@ -758,9 +845,15 @@ export function RespondeeForm() {
                   onChange={handleChange}
                   required
                   rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent ${
+                    fieldErrors.situation ? "border-red-500" : "border-gray-300"
+                  }`}
                   placeholder="What is happening? What help do you need?"
+                  aria-invalid={!!fieldErrors.situation}
                 />
+                {fieldErrors.situation && (
+                  <p className="text-red-600 text-xs mt-1">{fieldErrors.situation}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -844,7 +937,7 @@ export function RespondeeForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-slate-700 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg"
+            className="w-full border-2 border-slate-100 bg-slate-700 text-white py-3 px-4 rounded-lg font-bold text-base hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg"
           >
             {isSubmitting ? "Submitting..." : "Submit Help Request"}
           </button>

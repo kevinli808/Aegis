@@ -150,7 +150,7 @@ export default function GeminiChatPage() {
             <h1 className="text-2xl sm:text-3xl font-bold">Emergency Support Chat</h1>
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 border-2 border-slate-100 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg transition-colors"
             >
               <Home className="w-4 h-4" />
               <span className="text-sm">Home</span>
@@ -242,7 +242,7 @@ export default function GeminiChatPage() {
             <button
               type="submit"
               disabled={isLoading || !inputValue.trim()}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              className="border-2 border-blue-100 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             >
               <Send className="w-4 h-4" />
               <span className="hidden sm:inline">Send</span>

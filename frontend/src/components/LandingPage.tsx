@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Mic, FileText, SirenIcon } from 'lucide-react'
+import { Footer } from './Footer'
 import { useState, useEffect } from 'react'
 import { LiveMap } from './LiveMap'
 import { DisasterUpdates } from './DisasterUpdates'
@@ -116,14 +117,14 @@ export function LandingPage() {
             <div className="flex flex-col gap-3">
               <Link
                 to="/request-help?input=voice"
-                className="flex items-center gap-2 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
+                className="flex items-center gap-2 border-2 border-red-700 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
               >
                 <Mic className="w-5 h-5 text-white" />
                 <span className="font-semibold">Voice Call</span>
               </Link>
               <Link
                 to="/request-help?input=form"
-                className="flex items-center gap-2 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
+                className="flex items-center gap-2 border-2 border-red-700 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
               >
                 <FileText className="w-5 h-5 text-white" />
                 <span className="font-semibold">Form</span>
@@ -153,19 +154,19 @@ export function LandingPage() {
         </div>
 
         <div className="grid sm:grid-cols-3 gap-4 sm:gap-6 mb-8 relative z-10">
-          <Link to="/request-help" className="bg-red-700 text-white rounded-xl p-6 hover:bg-red-700 active:scale-95 transition-all text-left border border-gray-300">
+          <Link to="/request-help" className="border-2 border-red-600 bg-red-700 text-white rounded-xl p-6 hover:bg-red-700 active:scale-95 transition-all text-left">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
             </div>
             <p className="text-sm sm:text-base text-red-100">Submit help request</p>
           </Link>
 
-          <Link to="/responder" className="bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left border border-gray-300">
+          <Link to="/responder" className="border-2 border-zinc-600 bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
             <h3 className="text-xl sm:text-2xl font-bold mb-2">Responders</h3>
             <p className="text-sm sm:text-base text-sky-100">View full dashboard</p>
           </Link>
 
-          <Link to="/info" className="bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left border border-gray-300">
+          <Link to="/info" className="border-2 border-zinc-600 bg-zinc-700 text-white rounded-xl p-6 hover:bg-gray-800 active:scale-95 transition-all text-left">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-xl sm:text-2xl font-bold">Safety Info</h3>
             </div>
@@ -183,24 +184,7 @@ export function LandingPage() {
         </div>
       </div>
 
-      <footer className="mt-12 bg-slate-900 text-gray-300 py-8 border-t border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <img src="/aegis-logo.png" alt="Aegis" className="w-8 h-8" />
-              <span className="font-semibold text-white">Aegis</span>
-            </div>
-            <nav className="flex flex-wrap gap-6">
-              <Link to="/request-help" className="hover:text-white transition-colors">Request Help</Link>
-              <Link to="/responder" className="hover:text-white transition-colors">Responders</Link>
-              <Link to="/info" className="hover:text-white transition-colors">Safety Info</Link>
-            </nav>
-          </div>
-          <div className="mt-6 pt-6 border-t border-slate-700 text-sm text-gray-400">
-            © {new Date().getFullYear()} Aegis. Help when it matters.
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AlertCircle, AlertTriangle, Info } from 'lucide-react'
-import { projectId, publicAnonKey } from '../utils/supabase/info'
+import { API_BASE } from '../config'
 
 interface DisasterUpdate {
   id: string
@@ -20,21 +20,23 @@ export function DisasterUpdates() {
     return () => clearInterval(interval)
   }, [])
 
+  const mapToDisasterUpdate = (doc: Record<string, unknown>): DisasterUpdate => ({
+    id: String(doc._id ?? doc.id ?? ''),
+    title: String(doc.title ?? ''),
+    message: String(doc.message ?? ''),
+    severity: (doc.severity as 'info' | 'warning' | 'critical') || 'info',
+    timestamp: String(doc.timestamp ?? ''),
+    author: String(doc.author ?? 'System Admin'),
+  })
+
   const fetchUpdates = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/get-updates`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        },
-      )
-
-      const data = await response.json()
-      if (data.success) {
-        setUpdates(data.updates.slice(0, 3))
-      }
+      const response = await fetch(`${API_BASE}/updates`, {
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!response.ok) throw new Error('Failed to fetch')
+      const data = (await response.json()) as Record<string, unknown>[]
+      setUpdates((data || []).slice(0, 3).map(mapToDisasterUpdate))
     } catch (error) {
       console.error('Error fetching updates:', error)
     }
@@ -74,8 +76,7 @@ export function DisasterUpdates() {
               {getSeverityIcon(update.severity)}
               <div className="flex-1">
                 <h3 className="font-bold text-base">{update.title}</h3>
-                <p className="text-sm mt-1">{update.message}</p>
-                <div className="text-xs mt-2 opacity-75">Posted by {update.author} • {new Date(update.timestamp).toLocaleString()}</div>
+                <p className="text-sm mt-1">{update.message} {new Date(update.timestamp).toLocaleString()}</p>
               </div>
             </div>
           </div>

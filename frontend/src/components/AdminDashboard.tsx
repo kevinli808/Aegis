@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, Trash2, AlertTriangle, Info as InfoIcon, AlertCircle } from 'lucide-react';
 import { BackToHomeButton } from './BackToHomeButton';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { API_BASE } from '../config';
+import { useToast } from './Toast';
+import { useConfirm } from './ConfirmModal';
 
 interface DisasterUpdate {
   id: string;
@@ -44,6 +46,8 @@ export function AdminDashboard() {
 
   const adminToken = localStorage.getItem('adminToken');
   const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+  const { success, error } = useToast();
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     console.log('AdminDashboard mounted, checking auth...');
@@ -61,25 +65,27 @@ export function AdminDashboard() {
     fetchRequests();
   }, [adminToken, navigate]);
 
+  const mapMongoToDisasterUpdate = (doc: Record<string, unknown>): DisasterUpdate => ({
+    id: String(doc._id ?? doc.id ?? ''),
+    title: String(doc.title ?? ''),
+    message: String(doc.message ?? ''),
+    severity: (doc.severity as 'info' | 'warning' | 'critical') || 'info',
+    timestamp: String(doc.timestamp ?? ''),
+    author: String(doc.author ?? 'System Admin'),
+  });
+
   const fetchUpdates = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/get-updates`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-      if (data.success && data.updates) {
-        setUpdates(data.updates);
-        localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(data.updates));
-      }
+      const response = await fetch(`${API_BASE}/updates`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = (await response.json()) as Record<string, unknown>[];
+      const mapped = (data || []).map(mapMongoToDisasterUpdate);
+      setUpdates(mapped);
+      localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(mapped));
     } catch (error) {
-      console.error('Error fetching updates from server:', error);
-      // Fall back to local storage
+      console.error('Error fetching updates:', error);
       const stored = localStorage.getItem(STORAGE_KEY_UPDATES);
       if (stored) {
         try {
@@ -91,47 +97,38 @@ export function AdminDashboard() {
     }
   };
 
+  const mapMongoToHelpRequest = (req: Record<string, unknown>): HelpRequest => {
+    const loc = req.location as { type?: string; coordinates?: number[] } | undefined;
+    const hasCoords = loc?.type === 'Point' && Array.isArray(loc?.coordinates);
+    return {
+      id: String(req._id ?? ''),
+      name: String(req.name ?? ''),
+      phone: String(req.phone ?? ''),
+      location: hasCoords && loc?.coordinates
+        ? `${(loc.coordinates[1] ?? 0).toFixed(4)}, ${(loc.coordinates[0] ?? 0).toFixed(4)}`
+        : String(req.location ?? req.city ?? req.province ?? ''),
+      city: String(req.city ?? ''),
+      province: String(req.province ?? ''),
+      postalCode: String(req.postalCode ?? ''),
+      situation: String(req.situation ?? req.type ?? req.safety_status ?? ''),
+      priorityScore: Number(req.priorityScore ?? req.score ?? req.final_score ?? 0),
+      timestamp: String(req.timestamp ?? ''),
+      status: String(req.status ?? 'pending'),
+    };
+  };
+
   const fetchRequests = async () => {
     try {
-      console.log('Fetching help requests...');
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/get-requests`,
-        {
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-
-      console.log('Requests response status:', response.status);
-      const data = await response.json();
-      console.log('Requests data:', data);
-      
-      if (data.requests) {
-        // Filter out test/example requests
-        const testNames = ['Kevin Li'];
-        const testSituations = ['i might actually die from a snake', 'helpppp', 'hj'];
-        const filteredRequests = data.requests.filter((req: HelpRequest) => {
-          return !testNames.includes(req.name) && !testSituations.includes(req.situation);
-        });
-        setRequests(filteredRequests);
-        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(filteredRequests));
-        console.log('Set requests:', filteredRequests.length);
-      } else if (data.error) {
-        console.error('Error from server:', data.error);
-        // Fall back to local storage
-        const stored = localStorage.getItem(STORAGE_KEY_REQUESTS);
-        if (stored) {
-          try {
-            setRequests(JSON.parse(stored));
-          } catch (e) {
-            setRequests([]);
-          }
-        }
-      }
+      const response = await fetch(`${API_BASE}/incidents?include_resolved=true`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = (await response.json()) as Record<string, unknown>[];
+      const mapped = (data || []).map(mapMongoToHelpRequest);
+      setRequests(mapped);
+      localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(mapped));
     } catch (error) {
       console.error('Error fetching requests:', error);
-      // Fall back to local storage
       const stored = localStorage.getItem(STORAGE_KEY_REQUESTS);
       if (stored) {
         try {
@@ -147,228 +144,101 @@ export function AdminDashboard() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validate form data
     if (!newUpdate.title.trim() || !newUpdate.message.trim()) {
-      alert('Please fill in all fields');
+      error('Please fill in all fields');
       setIsLoading(false);
       return;
     }
 
-    const update: DisasterUpdate = {
-      id: Date.now().toString(),
-      title: newUpdate.title,
-      message: newUpdate.message,
-      severity: newUpdate.severity,
-      timestamp: new Date().toISOString(),
-      author: adminUser.user_metadata?.name || adminUser.email || 'System Admin',
-    };
+    const author = adminUser.user_metadata?.name || adminUser.email || 'System Admin';
 
     try {
-      console.log('Posting update with token:', adminToken);
-      console.log('Update data:', newUpdate);
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (adminToken === 'hardcoded-admin-token') {
-        headers['X-Admin-Token'] = adminToken;
-      } else {
-        headers['Authorization'] = `Bearer ${adminToken}`;
-      }
-      
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/admin/post-update`,
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(newUpdate),
-        }
-      );
+      const response = await fetch(`${API_BASE}/updates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newUpdate.title,
+          message: newUpdate.message,
+          severity: newUpdate.severity,
+          author,
+        }),
+      });
 
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error status: ${response.status}`);
-      }
-      
+      if (!response.ok) throw new Error('Failed to post');
       const data = await response.json();
-      console.log('Response data:', data);
-
       if (data.success) {
-        alert('Update posted successfully!');
-        const updatedUpdates = [update, ...updates];
-        setUpdates(updatedUpdates);
-        localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(updatedUpdates));
+        success('Update posted successfully!');
         setNewUpdate({ title: '', message: '', severity: 'info' });
+        fetchUpdates();
       } else {
         throw new Error(data.error || 'Unknown error');
       }
-    } catch (error) {
-      console.error('Error posting update:', error);
-      // Use local storage as fallback
-      console.log('Using local storage fallback for update');
-      const updatedUpdates = [update, ...updates];
-      setUpdates(updatedUpdates);
-      localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(updatedUpdates));
-      alert('Update posted successfully (saved locally)!');
-      setNewUpdate({ title: '', message: '', severity: 'info' });
+    } catch (err) {
+      console.error('Error posting update:', err);
+      error('Failed to post update. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const deleteUpdate = async (updateId: string) => {
-    if (!confirm('Delete this update?')) return;
+    const ok = await confirm('Delete this update?', { confirmLabel: 'Delete', variant: 'danger' });
+    if (!ok) return;
 
     try {
-      console.log('Deleting update:', updateId, 'with token:', adminToken);
-      
-      const headers: Record<string, string> = {};
-      
-      if (adminToken === 'hardcoded-admin-token') {
-        headers['X-Admin-Token'] = adminToken;
-      } else {
-        headers['Authorization'] = `Bearer ${adminToken}`;
-      }
-      
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/admin/delete-update/${updateId}`,
-        {
-          method: 'DELETE',
-          headers,
-        }
-      );
+      const response = await fetch(`${API_BASE}/updates/${updateId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-      console.log('Delete update response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error('Failed to delete');
       const data = await response.json();
-      console.log('Delete update response data:', data);
-
       if (data.success) {
-        alert('Update deleted');
         const updatedUpdates = updates.filter(u => u.id !== updateId);
         setUpdates(updatedUpdates);
         localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(updatedUpdates));
+        success('Update deleted');
       } else {
         throw new Error(data.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Error deleting update:', error);
-      // Use local storage as fallback
-      console.log('Using local storage fallback for delete');
       const updatedUpdates = updates.filter(u => u.id !== updateId);
       setUpdates(updatedUpdates);
       localStorage.setItem(STORAGE_KEY_UPDATES, JSON.stringify(updatedUpdates));
-      alert('Update deleted (saved locally)!');
+      success('Update deleted (saved locally)!');
     }
   };
 
   const deleteRequest = async (requestId: string) => {
-    if (!confirm('Are you sure you want to delete this help request? This cannot be undone.')) return;
+    const ok = await confirm(
+      'Are you sure you want to delete this help request? This cannot be undone.',
+      { confirmLabel: 'Delete', variant: 'danger' },
+    );
+    if (!ok) return;
 
     try {
-      console.log('Deleting request:', requestId, 'with token:', adminToken);
-      
-      const headers: Record<string, string> = {};
-      
-      if (adminToken === 'hardcoded-admin-token') {
-        headers['X-Admin-Token'] = adminToken;
-      } else {
-        headers['Authorization'] = `Bearer ${adminToken}`;
-      }
-      
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/admin/delete-request/${requestId}`,
-        {
-          method: 'DELETE',
-          headers,
-        }
-      );
+      const response = await fetch(`${API_BASE}/incidents/${requestId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-      console.log('Delete response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error status: ${response.status}`);
-      }
-      
+      if (!response.ok) throw new Error('Failed to delete');
       const data = await response.json();
-      console.log('Delete response data:', data);
-
       if (data.success) {
-        alert('Request deleted');
         const updatedRequests = requests.filter(r => r.id !== requestId);
         setRequests(updatedRequests);
         localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(updatedRequests));
+        success('Request deleted');
       } else {
         throw new Error(data.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Error deleting request:', error);
-      // Use local storage as fallback
-      console.log('Using local storage fallback for delete');
       const updatedRequests = requests.filter(r => r.id !== requestId);
       setRequests(updatedRequests);
       localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(updatedRequests));
-      alert('Request deleted (saved locally)!');
-    }
-  };
-
-  const deleteAllRequests = async () => {
-    if (!confirm('⚠️ WARNING: This will delete ALL help requests permanently. This action cannot be undone. Are you absolutely sure?')) return;
-    
-    if (!confirm('This is your final confirmation. Delete ALL ' + requests.length + ' requests?')) return;
-
-    setIsLoading(true);
-    
-    try {
-      console.log('Deleting all requests, count:', requests.length);
-      
-      const headers: Record<string, string> = {};
-      
-      if (adminToken === 'hardcoded-admin-token') {
-        headers['X-Admin-Token'] = adminToken;
-      } else {
-        headers['Authorization'] = `Bearer ${adminToken}`;
-      }
-      
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-636dcea6/admin/delete-all-requests`,
-        {
-          method: 'DELETE',
-          headers,
-        }
-      );
-
-      console.log('Delete all response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Delete all response data:', data);
-
-      if (data.success) {
-        alert(`Successfully deleted ${data.deletedCount || requests.length} requests`);
-        setRequests([]);
-        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify([]));
-      } else {
-        throw new Error(data.error || 'Unknown error');
-      }
-    } catch (error) {
-      console.error('Error deleting all requests:', error);
-      // Use local storage as fallback
-      console.log('Using local storage fallback for delete all');
-      setRequests([]);
-      localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify([]));
-      alert('All requests deleted (saved locally)!');
-    } finally {
-      setIsLoading(false);
+      success('Request deleted (saved locally)!');
     }
   };
 
@@ -406,7 +276,7 @@ export function AdminDashboard() {
             </div>
             <button
               onClick={logout}
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+              className="border-2 border-gray-100 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
             >
               Logout
             </button>
@@ -459,7 +329,7 @@ export function AdminDashboard() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 active:scale-95 transition-all font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full border-2 border-blue-100 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 active:scale-95 transition-all font-medium disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <Send className="w-5 h-5" />
                 {isLoading ? 'Posting...' : 'Post Update'}
@@ -491,7 +361,7 @@ export function AdminDashboard() {
                       </div>
                       <button
                         onClick={() => deleteUpdate(update.id)}
-                        className="text-red-600 hover:text-red-800"
+                        className="border-2 border-red-100 text-red-600 hover:text-red-800 rounded-lg p-1"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -541,7 +411,7 @@ export function AdminDashboard() {
                     </div>
                     <button
                       onClick={() => deleteRequest(request.id)}
-                      className="bg-red-100 text-red-700 px-3 py-2 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+                      className="border-2 border-red-100 bg-red-100 text-red-700 px-3 py-2 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" />
                       Delete
@@ -550,13 +420,6 @@ export function AdminDashboard() {
                 </div>
               ))
             )}
-            <button
-              onClick={deleteAllRequests}
-              className="w-full bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 active:scale-95 transition-all font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <Trash2 className="w-5 h-5" />
-              {isLoading ? 'Deleting...' : 'Delete All Requests'}
-            </button>
           </div>
         </div>
       </div>

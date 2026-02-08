@@ -5,6 +5,7 @@ import { API_BASE } from '../config';
 import { LiveMap } from './LiveMap';
 import { BackToHomeButton } from './BackToHomeButton';
 import { Drawer } from './Drawer';
+import { useToast } from './Toast';
 
 interface HelpRequest {
   id: string;
@@ -37,6 +38,7 @@ export function ResponderDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<HelpRequest | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
+  const { error } = useToast();
 
   useEffect(() => {
     fetchRequests();
@@ -117,11 +119,10 @@ export function ResponderDashboard() {
       if (response.ok) {
         fetchRequests();
       } else {
-        alert('Failed to update status');
+        error('Failed to update status');
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Error updating status');
     }
   };
 
@@ -176,14 +177,14 @@ export function ResponderDashboard() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Name, location..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+              className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-400 focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
             />
           </div>
           <div className="relative">
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2.5 pr-9 rounded-lg border border-gray-200 focus:ring-2 focus:ring-sky-500 appearance-none bg-white text-sm"
+              className="w-full px-4 py-2.5 pr-9 rounded-lg border border-gray-400 focus:ring-2 focus:ring-sky-500 appearance-none bg-white text-sm"
             >
               <option value="all">All Requests</option>
               <option value="pending">Pending</option>
@@ -247,7 +248,7 @@ export function ResponderDashboard() {
       className={`rounded-xl border p-4 cursor-pointer transition-all bg-white ${
         selectedRequest?.id === request.id
           ? 'border-sky-500 ring-2 ring-sky-100'
-          : 'border-gray-300 hover:border-gray-300'
+          : 'border-gray-400 hover:border-gray-500'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -295,7 +296,7 @@ export function ResponderDashboard() {
             {request.status === 'pending' && (
               <button
                 onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'in-progress'); }}
-                className="flex-1 py-2.5 rounded-full bg-sky-600 text-white font-medium hover:bg-sky-700 text-sm"
+                className="flex-1 py-2.5 rounded-full border-2 border-sky-100 bg-sky-600 text-white font-medium hover:bg-sky-700 text-sm"
               >
                 Start Response
               </button>
@@ -303,7 +304,7 @@ export function ResponderDashboard() {
             {request.status === 'in-progress' && (
               <button
                 onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'resolved'); }}
-                className="flex-1 py-2.5 rounded-full bg-emerald-600 text-white font-medium hover:bg-emerald-700 text-sm"
+                className="flex-1 py-2.5 rounded-full border-2 border-emerald-100 bg-emerald-600 text-white font-medium hover:bg-emerald-700 text-sm"
               >
                 Mark Resolved
               </button>
@@ -311,7 +312,7 @@ export function ResponderDashboard() {
             {request.status === 'resolved' && (
               <button
                 onClick={e => { e.stopPropagation(); handleStatusUpdate(request.id, 'pending'); }}
-                className="flex-1 py-2.5 rounded-full bg-amber-600 text-white font-medium hover:bg-amber-700 text-sm"
+                className="flex-1 py-2.5 rounded-full border-2 border-amber-100 bg-amber-600 text-white font-medium hover:bg-amber-700 text-sm"
               >
                 Reopen
               </button>
@@ -356,7 +357,7 @@ export function ResponderDashboard() {
             <div className="flex gap-2">
               <Link
                 to="/admin/login"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-sky-600 text-white hover:bg-sky-700 text-sm font-medium"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 border-sky-100 bg-sky-600 text-white hover:bg-sky-700 text-sm font-medium"
               >
                 <Shield className="w-4 h-4" />
                 Admin
@@ -374,14 +375,18 @@ export function ResponderDashboard() {
               <LiveMap
                 requests={filteredRequests}
                 selectedRequest={selectedRequest}
-                onSelectRequest={(r) => setSelectedRequest(r ? requests.find(req => req.id === r.id) ?? null : null)}
+                onSelectRequest={(r) => {
+                const req = r ? requests.find(req => req.id === r.id) ?? null : null
+                setSelectedRequest(req)
+                if (req && window.innerWidth < 1024) setShowDrawer(true)
+              }}
               />
             </div>
           </div>
           {/* FAB to open drawer */}
           <button
             onClick={() => setShowDrawer(true)}
-            className="fixed bottom-6 left-4 -tranneutral-x-1/2 z-[1050] flex items-center gap-2 px-6 py-3 rounded-lg bg-sky-600 text-white font-medium shadow-lg hover:bg-sky-700"
+            className="fixed bottom-6 left-4 -tranneutral-x-1/2 z-[1050] flex items-center gap-2 px-6 py-3 rounded-lg border-2 border-sky-100 bg-sky-600 text-white font-medium shadow-lg hover:bg-sky-700"
           >
             <List className="w-5 h-5" />
             Requests ({filteredRequests.length})
@@ -401,7 +406,11 @@ export function ResponderDashboard() {
                 <LiveMap
                   requests={filteredRequests}
                   selectedRequest={selectedRequest}
-                  onSelectRequest={(r) => setSelectedRequest(r ? requests.find(req => req.id === r.id) ?? null : null)}
+                  onSelectRequest={(r) => {
+                const req = r ? requests.find(req => req.id === r.id) ?? null : null
+                setSelectedRequest(req)
+                if (req && window.innerWidth < 1024) setShowDrawer(true)
+              }}
                 />
               </div>
             </div>

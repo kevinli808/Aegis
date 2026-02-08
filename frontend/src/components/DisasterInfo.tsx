@@ -1,20 +1,23 @@
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Flame, Droplets, Wind, Home, Heart, Phone } from 'lucide-react';
 import { BackToHomeButton } from './BackToHomeButton';
+import { Footer } from './Footer';
 
 export function DisasterInfo() {
   return (
-    <div className="min-h-screen">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <BackToHomeButton className="mb-4" />
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-blue-600 rounded text-white flex items-center justify-center font-bold text-lg flex-shrink-0">A</div>
-            <h1 className="text-4xl font-bold text-gray-900">Disaster Safety Information</h1>
-          </div>
-          <p className="text-gray-600">Essential tips and information for various emergency situations</p>
+    <div className="min-h-screen bg-white">
+      <div className="bg-slate-900 text-white py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-left">
+          <BackToHomeButton className="mb-3 text-sky-300 hover:text-white border-slate-600 hover:bg-slate-700" />
+          <Link to="/" className="flex items-center gap-3 text-white hover:text-white/90">
+            <h1 className="text-4xl sm:text-5xl font-bold">Aegis</h1>
+            <img src="/aegis-logo.png" alt="Aegis" className="w-10 h-10 sm:w-12 sm:h-12" />
+          </Link>
+          <p className="text-lg sm:text-xl text-gray-300 mt-2">Disaster Safety Information</p>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Emergency Numbers */}
         <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-8">
@@ -235,12 +238,14 @@ export function DisasterInfo() {
           <p className="mb-6">If you're experiencing an emergency, submit a help request now.</p>
           <Link
             to="/request-help"
-            className="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors"
+            className="inline-block border-2 border-blue-100 bg-white text-blue-600 px-8 py-3 rounded-lg font-bold hover:bg-blue-50 transition-colors"
           >
             Request Help
           </Link>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

@@ -105,7 +105,7 @@ export function IndexChoice() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           <Link
             to="/request-help"
-            className="bg-orange-600 text-white rounded-xl p-6 sm:p-8 hover:bg-orange-700 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
+            className="border-2 border-orange-100 bg-orange-600 text-white rounded-xl p-6 sm:p-8 hover:bg-orange-700 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
           >
             <AlertCircle className="w-12 h-12 sm:w-14 sm:h-14" />
             <span className="text-xl sm:text-2xl font-bold">I need help</span>
@@ -113,7 +113,7 @@ export function IndexChoice() {
           </Link>
           <Link
             to="/responder"
-            className="bg-slate-700 text-white rounded-xl p-6 sm:p-8 hover:bg-slate-800 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
+            className="border-2 border-slate-100 bg-slate-700 text-white rounded-xl p-6 sm:p-8 hover:bg-slate-800 active:scale-95 transition-all text-center flex flex-col items-center justify-center gap-3"
           >
             <Shield className="w-12 h-12 sm:w-14 sm:h-14" />
             <span className="text-xl sm:text-2xl font-bold">I'm a responder</span>

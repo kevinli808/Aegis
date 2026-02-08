@@ -293,6 +293,14 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
           </div>
         )}
 
+        {status === 'idle' && !error && (
+          <div className="py-8 sm:py-12">
+            <p className="text-neutral-600 text-sm m-0 text-left">
+              Tap <strong>Start call</strong> below to speak with our AI assistant. Describe your emergency and we&apos;ll collect your location and share it with responders automatically.
+            </p>
+          </div>
+        )}
+
         {error && (
           <div className="p-4 rounded-lg bg-red-50 text-red-700 text-sm">
             {error}
@@ -332,7 +340,7 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
           {status === 'idle' && (
             <button
               type="button"
-              className="w-full max-w-7xl py-3 px-4 rounded-lg font-bold text-base bg-slate-700 text-white hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full max-w-7xl py-3 px-4 rounded-lg font-bold text-base border-2 border-slate-100 bg-slate-700 text-white hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
               onClick={startCall}
               disabled={!AGENT_ID}
             >
@@ -342,7 +350,7 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
           {(status === 'connecting' || status === 'connected') && (
             <button
               type="button"
-              className="w-full max-w-7xl py-3 px-4 rounded-lg font-bold text-base bg-slate-600 text-white hover:bg-slate-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full max-w-7xl py-3 px-4 rounded-lg font-bold text-base border-2 border-slate-100 bg-slate-600 text-white hover:bg-slate-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
               onClick={endCall}
               disabled={status === 'connecting'}
             >
