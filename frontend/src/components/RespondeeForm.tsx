@@ -409,23 +409,23 @@ export function RespondeeForm() {
 
       if (!response.ok) throw new Error("Network response was not ok");
 
-      if (data.success) {
-        let message = `Help request submitted successfully!\n\nRequest ID: ${data.requestId}\nPriority Score: ${data.priorityScore}`;
-        
-        if (data.coordinates) {
+      const data = await response.json();
+      if (data.status === "success" || data.success) {
+        let message = `Help request submitted successfully!\n\nRequest ID: ${data.id ?? data.requestId}\nPriority Score: ${data.priority ?? data.priorityScore}`;
+
+        const hasCoordinates = data.coordinates ?? (formData.latitude && formData.longitude);
+        if (hasCoordinates) {
           message += `\n\nYour location has been mapped and responders can see your position.`;
         } else {
           message += `\n\nYour address has been recorded. Responders will contact you at ${formData.phone}.`;
         }
-        
+
         alert(message);
-        navigate('/gemini-chat', { state: { formData } });
+        setSubmitSuccess(true);
+        navigate("/gemini-chat", { state: { formData } });
       } else {
-        alert('Failed to submit request. Please try again.');
+        alert("Failed to submit request. Please try again.");
       }
-      await response.json();
-      setSubmitSuccess(true);
-      navigate("/");
     } catch (error) {
       console.error("Error submitting help request:", error);
       alert("Failed to submit request. Please try again.");

@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-import google.genai as genai
+import google.generativeai as genai
 from severity_ranker import SeverityRanker
 
 # Load environment variables
