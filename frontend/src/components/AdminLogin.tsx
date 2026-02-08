@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, Lock, Mail, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Shield, Lock, Mail, User } from 'lucide-react';
+import { BackToHomeButton } from './BackToHomeButton';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 export function AdminLogin() {
@@ -85,12 +86,9 @@ export function AdminLogin() {
   return (
     <div className="min-h-screen">
       <div className="max-w-md mx-auto px-4 py-8">
-        <Link to="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6">
-          <ArrowLeft className="w-5 h-5" />
-          Back to Home
-        </Link>
+        <BackToHomeButton className="mb-6" />
 
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-white rounded-xl p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-6">Aegis Admin</h1>
 
           <div className="flex items-center justify-center gap-2 mb-6 text-gray-600">
@@ -128,7 +126,7 @@ export function AdminLogin() {
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <User className="absolute left-3 top-1/2 transform -tranneutral-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     name="name"
@@ -147,7 +145,7 @@ export function AdminLogin() {
                 Email {!isSignup && <span className="text-xs text-gray-500">(or username)</span>}
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -tranneutral-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type={isSignup ? "email" : "text"}
                   name="email"
@@ -165,7 +163,7 @@ export function AdminLogin() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 transform -tranneutral-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="password"
                   name="password"
@@ -191,7 +189,7 @@ export function AdminLogin() {
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-6 pt-6 border-t border-gray-300">
             <p className="text-xs text-gray-500 text-center">
               Admin access is for authorized first responders only
             </p>

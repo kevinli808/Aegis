@@ -1,10 +1,8 @@
 import { Link } from 'react-router-dom'
-import { AlertCircle, Info, Mic, FileText, SirenIcon } from 'lucide-react'
+import { Mic, FileText, SirenIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { LiveMap } from './LiveMap'
 import { DisasterUpdates } from './DisasterUpdates'
-import { RespondeeForm } from './RespondeeForm'
-import { VoiceCall } from './VoiceCall'
 import { projectId, publicAnonKey } from '../utils/supabase/info'
 
 interface HelpRequest {
@@ -32,7 +30,6 @@ interface HelpRequest {
 export function LandingPage() {
   const [requests, setRequests] = useState<HelpRequest[]>([])
   const [selectedRequest, setSelectedRequest] = useState<HelpRequest | null>(null)
-  const [helpInputMethod, setHelpInputMethod] = useState<'voice' | 'form' | null>(null)
 
   useEffect(() => {
     fetchRequests()
@@ -74,11 +71,11 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="bg-slate-900 text-white py-6 sm:py-8">
+      <div className="bg-slate-900 text-white py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-left">
           <Link to="/" className="flex items-center gap-3 mb-3 text-white hover:text-white/90">
             <h1 className="text-4xl sm:text-5xl font-bold">Aegis</h1>
-            <img src="/original-logo.png" alt="Aegis" className="w-10 h-10 sm:w-12 sm:h-12" />
+            <img src="/aegis-logo.png" alt="Aegis" className="w-10 h-10 sm:w-12 sm:h-12" />
           </Link>
           <p className="text-lg sm:text-xl text-gray-300">Help when it matters</p>
         </div>
@@ -89,55 +86,27 @@ export function LandingPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className="flex-1 sm:flex-[2] bg-red-700 text-white rounded-lg p-6 text-left sm:min-h-[220px]">
-            {!helpInputMethod ? (
-              <>
-                <div className="flex items-center gap-2 mb-6">
-                  <SirenIcon className="w-6 h-6" />
-                  <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
-                </div>
-                <p className="text-sm sm:text-base text-red-100 mb-6">Choose how you'd like to submit your help request:</p>
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={() => setHelpInputMethod('voice')}
-                    className="flex items-center gap-2 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
-                  >
-                    <Mic className="w-5 h-5 text-white" />
-                    <span className="font-semibold">Voice Call</span>
-                  </button>
-                  <button
-                    onClick={() => setHelpInputMethod('form')}
-                    className="flex items-center gap-2 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
-                  >
-                    <FileText className="w-5 h-5 text-white" />
-                    <span className="font-semibold">Form</span>
-                  </button>
-                </div>
-              </>
-            ) : helpInputMethod === 'voice' ? (
-              <>
-                <button
-                  onClick={() => setHelpInputMethod(null)}
-                  className="text-white hover:text-rose-100 mb-4 flex items-center gap-1"
-                >
-                  ← Back
-                </button>
-                <div className="bg-white rounded-lg p-4 text-rose-900">
-                  <VoiceCall />
-                </div>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => setHelpInputMethod(null)}
-                  className="text-white hover:text-rose-100 mb-4 flex items-center gap-1"
-                >
-                  ← Back
-                </button>
-                <div className="bg-white rounded-lg p-4 overflow-y-auto max-h-[500px] text-rose-900">
-                  <RespondeeForm />
-                </div>
-              </>
-            )}
+            <div className="flex items-center gap-2 mb-6">
+              <SirenIcon className="w-6 h-6" />
+              <h3 className="text-xl sm:text-2xl font-bold">Need Help?</h3>
+            </div>
+            <p className="text-sm sm:text-base text-red-100 mb-6">Choose how you'd like to submit your help request:</p>
+            <div className="flex flex-col gap-3">
+              <Link
+                to="/request-help?input=voice"
+                className="flex items-center gap-2 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
+              >
+                <Mic className="w-5 h-5 text-white" />
+                <span className="font-semibold">Voice Call</span>
+              </Link>
+              <Link
+                to="/request-help?input=form"
+                className="flex items-center gap-2 bg-red-800 text-white hover:bg-red-800 p-3 rounded-lg transition-colors text-left"
+              >
+                <FileText className="w-5 h-5 text-white" />
+                <span className="font-semibold">Form</span>
+              </Link>
+            </div>
           </div>
           <div className="flex flex-col gap-3 sm:gap-4 flex-1">
             <div className="bg-yellow-100 rounded-lg p-3 sm:p-4 flex-1 flex flex-col justify-center">
@@ -154,7 +123,7 @@ export function LandingPage() {
 
         <div className="mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Active Incidents Map</h2>
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-gray-200 relative z-0">
+          <div className="bg-white rounded-xl overflow-hidden border-2 border-gray-300 relative z-0">
             <div className="h-[400px] sm:h-[600px] relative">
               <LiveMap requests={requests} selectedRequest={selectedRequest} onSelectRequest={setSelectedRequest} />
             </div>
@@ -182,7 +151,7 @@ export function LandingPage() {
           </Link>
         </div>
 
-        <div className="bg-gray-50 rounded-xl p-6 sm:p-8 border border-gray-200 relative z-10">
+        <div className="bg-gray-50 rounded-xl p-6 border border-gray-300 relative z-10">
           <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">How It Works</h3>
           <div className="space-y-3 text-gray-700">
             <p>1. People in need submit help requests with their location and situation</p>

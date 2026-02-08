@@ -60,7 +60,6 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
             border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
           "></div>
           <div style="
             position: absolute;
@@ -96,8 +95,9 @@ export function LiveMap({ requests, selectedRequest, onSelectRequest }: LiveMapP
         mapRef.current = L.map(containerRef.current, {
           center: [56.1304, -106.3468],
           zoom: 4,
-          zoomControl: true,
+          zoomControl: false,
         })
+        L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current)
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',

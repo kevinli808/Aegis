@@ -7,6 +7,9 @@ const AGENT_ID = import.meta.env.VITE_ELEVENLABS_AGENT_ID ?? ''
 type CallStatus = 'idle' | 'connecting' | 'connected' | 'error'
 type ConversationMode = 'agent-speaking' | 'user-speaking' | 'listening'
 
+const USER_COLOR = '#ef4444'
+const AGENT_COLOR = '#3b82f6'
+
 function SynthwaveVisualizer({
   conversation,
   mode,
@@ -16,7 +19,6 @@ function SynthwaveVisualizer({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number | null>(null)
-  const timeRef = useRef(0)
 
   useEffect(() => {
     if (!conversation || !canvasRef.current) return
@@ -30,8 +32,6 @@ function SynthwaveVisualizer({
 
     const draw = async () => {
       try {
-        timeRef.current += 0.05
-
         const inputData = (
           conversation as { getInputByteFrequencyData?: () => Uint8Array }
         ).getInputByteFrequencyData?.()
@@ -57,14 +57,16 @@ function SynthwaveVisualizer({
         const data = isAgent ? outputData : inputData
         const vol = isAgent ? outputVol : (inputVol ?? 0)
 
+        const accentColor = isAgent ? AGENT_COLOR : USER_COLOR
+
         const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
-        gradient.addColorStop(0, '#0a0520')
-        gradient.addColorStop(0.6, '#1a0a30')
-        gradient.addColorStop(1, '#2d1650')
+        gradient.addColorStop(0, '#0f172a')
+        gradient.addColorStop(0.6, '#1e293b')
+        gradient.addColorStop(1, '#334155')
         ctx.fillStyle = gradient
         ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-        ctx.strokeStyle = isAgent ? '#ff00ff40' : '#00ffff40'
+        ctx.strokeStyle = `${accentColor}40`
         ctx.lineWidth = 1
 
         for (let i = 0; i < GRID_LINES; i++) {
@@ -101,9 +103,7 @@ function SynthwaveVisualizer({
           } else {
             amplitude = vol * 0.8
           }
-          const wave1 = Math.sin(i * 0.2 + timeRef.current) * 0.15
-          const wave2 = Math.sin(i * 0.1 - timeRef.current * 0.7) * 0.1
-          const totalAmp = (amplitude * 0.7 + wave1 + wave2) * canvas.height * 0.25
+          const totalAmp = amplitude * canvas.height * 0.3
           const y = baseY - totalAmp
           if (i === 0) ctx.moveTo(x, y)
           else ctx.lineTo(x, y)
@@ -113,15 +113,9 @@ function SynthwaveVisualizer({
         ctx.closePath()
 
         const waveGradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
-        if (isAgent) {
-          waveGradient.addColorStop(0, '#ff00ff')
-          waveGradient.addColorStop(0.5, '#ff00ff80')
-          waveGradient.addColorStop(1, '#ff00ff20')
-        } else {
-          waveGradient.addColorStop(0, '#00ffff')
-          waveGradient.addColorStop(0.5, '#00ffff80')
-          waveGradient.addColorStop(1, '#00ffff20')
-        }
+        waveGradient.addColorStop(0, accentColor)
+        waveGradient.addColorStop(0.5, `${accentColor}80`)
+        waveGradient.addColorStop(1, `${accentColor}20`)
         ctx.fillStyle = waveGradient
         ctx.fill()
 
@@ -135,18 +129,16 @@ function SynthwaveVisualizer({
           } else {
             amplitude = vol * 0.8
           }
-          const wave1 = Math.sin(i * 0.2 + timeRef.current) * 0.15
-          const wave2 = Math.sin(i * 0.1 - timeRef.current * 0.7) * 0.1
-          const totalAmp = (amplitude * 0.7 + wave1 + wave2) * canvas.height * 0.25
+          const totalAmp = amplitude * canvas.height * 0.3
           const y = baseY - totalAmp
           if (i === 0) ctx.moveTo(x, y)
           else ctx.lineTo(x, y)
         }
-        ctx.strokeStyle = isAgent ? '#ff00ff' : '#00ffff'
+        ctx.strokeStyle = accentColor
         ctx.lineWidth = 2
         ctx.stroke()
-        ctx.shadowBlur = 20
-        ctx.shadowColor = isAgent ? '#ff00ff' : '#00ffff'
+        ctx.shadowBlur = 12
+        ctx.shadowColor = accentColor
         ctx.stroke()
         ctx.shadowBlur = 0
       } catch {}
@@ -176,9 +168,10 @@ interface VoiceCallProps {
   embedded?: boolean
   onBack?: () => void
   onLocationUpdate?: (lat: string, lng: string, location: string) => void
+  onCallEnd?: (transcript: string[]) => void
 }
 
-export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, onLocationUpdate }: VoiceCallProps) {
+export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, onLocationUpdate, onCallEnd }: VoiceCallProps) {
   const [status, setStatus] = useState<CallStatus>('idle')
   const [mode, setMode] = useState<ConversationMode>('listening')
   const [error, setError] = useState<string | null>(null)
@@ -186,6 +179,16 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [locationStatus, setLocationStatus] = useState<string | null>(null)
   const transcriptScrollRef = useRef<HTMLDivElement>(null)
+  const transcriptRef = useRef<string[]>([])
+  const onLocationUpdateRef = useRef(onLocationUpdate)
+
+  useEffect(() => {
+    onLocationUpdateRef.current = onLocationUpdate
+  }, [onLocationUpdate])
+
+  useEffect(() => {
+    transcriptRef.current = transcript
+  }, [transcript])
 
   useEffect(() => {
     const el = transcriptScrollRef.current
@@ -204,15 +207,15 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
         const lat = position.coords.latitude.toString()
         const lng = position.coords.longitude.toString()
         const location = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`
-        onLocationUpdate?.(lat, lng, location)
+        onLocationUpdateRef.current?.(lat, lng, location)
         setLocationStatus('Location captured')
       },
       (err) => {
         setLocationStatus(err.code === 1 ? 'Location denied' : 'Location unavailable')
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 300000 }
     )
-  }, [status, onLocationUpdate])
+  }, [status])
 
   const startCall = useCallback(async () => {
     if (!AGENT_ID) {
@@ -227,8 +230,10 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
         connectionType: 'websocket',
         onConnect: () => setStatus('connected'),
         onDisconnect: () => {
+          const snapshot = [...transcriptRef.current]
           setStatus('idle')
           setConversation(null)
+          onCallEnd?.(snapshot)
         },
         onMessage: (msg: { source?: string; message?: string; role?: string; text?: string }) => {
           const text = msg.message ?? msg.text ?? ''
@@ -265,25 +270,34 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
   }, [conversation])
 
   return (
-    <div
-      className={`flex flex-col w-full mx-auto ${
-        embedded
-          ? 'max-w-md sm:max-w-lg md:max-w-xl px-4 py-4 sm:px-6 sm:py-5'
-          : 'max-w-md sm:max-w-lg md:max-w-xl px-4 py-4 sm:px-8 sm:py-6'
-      }`}
-    >
+    <div className="flex flex-col w-full pb-24 sm:pb-0">
       {/* Header */}
       <header className="mb-4 sm:mb-6">
-        <h2 className="m-0 text-lg font-semibold text-slate-800 sm:text-xl md:text-2xl">{title}</h2>
-        <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-          Describe your situation. We'll collect your info and share your location with responders automatically.
-        </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">{title}</h1>
+            <p className="text-gray-600 text-sm sm:text-base">
+              Describe your situation. We'll collect your info and share your location with responders automatically.
+            </p>
+          </div>
+          {embedded && onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="shrink-0 inline-flex items-center gap-2 text-sky-600 hover:text-sky-800 hover:bg-gray-100 rounded-lg px-2 py-1.5 -mx-2 -my-1.5 transition-colors text-sm"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+          )}
+        </div>
       </header>
 
-      {/* Main content */}
-      <main className="flex flex-col items-center gap-4 flex-1 min-h-0">
+      {/* Main content - card styled like form sections */}
+      <div className="bg-white rounded-xl space-y-4">
         {!AGENT_ID && (
-          <div className="w-full bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm text-amber-800">
+          <div className="border p-5 border-gray-300 rounded-lg bg-amber-50 text-sm text-amber-800">
             Set <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs font-mono">VITE_ELEVENLABS_AGENT_ID</code> in{' '}
             <code className="bg-amber-100 px-1.5 py-0.5 rounded text-xs font-mono">.env</code> — get it from the{' '}
             <a href="https://elevenlabs.io/app/conversational-ai" target="_blank" rel="noreferrer" className="underline font-medium">
@@ -294,30 +308,30 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
         )}
 
         {error && (
-          <div className="w-full p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+          <div className="border p-5 border-gray-300 rounded-lg bg-red-50 text-red-700 text-sm">
             {error}
           </div>
         )}
 
         {status === 'connecting' && (
-          <div className="flex flex-col items-center justify-center gap-4 py-8 sm:py-12">
-            <div className="w-14 h-14 rounded-full bg-green-500 animate-pulse" />
-            <p className="m-0 text-sm font-medium text-slate-700">Connecting…</p>
-            <p className="m-0 text-xs text-slate-500">Allow microphone when prompted</p>
+          <div className="border p-5 border-gray-300 rounded-lg flex flex-col items-center justify-center gap-4 py-8 sm:py-12">
+            <div className="w-14 h-14 rounded-full bg-slate-600 animate-pulse" />
+            <p className="m-0 text-sm font-medium text-gray-700">Connecting…</p>
+            <p className="m-0 text-xs text-gray-600">Allow microphone when prompted</p>
           </div>
         )}
 
         {status === 'connected' && (
-          <div className="w-full flex flex-col items-center gap-4">
+          <div className="border p-5 border-gray-300 rounded-lg space-y-4">
             {locationStatus && (
-              <p className="m-0 text-xs text-slate-500 flex items-center gap-1.5">
+              <p className="text-sm text-gray-600 flex items-center gap-1.5">
                 <span>📍</span> {locationStatus}
               </p>
             )}
-            <div className="w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 shadow-lg aspect-[2/1] min-h-[200px]">
+            <div className="w-full rounded-lg overflow-hidden bg-slate-900 border border-gray-300 aspect-2/1 min-h-[200px]">
               <SynthwaveVisualizer conversation={conversation} mode={mode} />
             </div>
-            <p className="m-0 text-sm font-medium text-slate-600">
+            <p className="text-sm font-medium text-gray-700">
               {mode === 'agent-speaking' && 'Agent speaking…'}
               {mode === 'user-speaking' && 'Your turn — speak now'}
               {mode === 'listening' && 'Listening…'}
@@ -325,54 +339,54 @@ export function VoiceCall({ title = 'Aegis AI Call', embedded = false, onBack, o
           </div>
         )}
 
-        {/* Call button */}
-        <div className="w-full flex justify-center pt-2 sm:pt-4">
+        {/* Call button - fixed at bottom on mobile */}
+        <div className="fixed bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-300 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:static sm:border-0 sm:pt-0 sm:pb-0 sm:bg-transparent sm:flex sm:justify-start">
           {status === 'idle' && (
             <button
               type="button"
-              className="flex items-center justify-center gap-2 w-full sm:w-auto min-w-[200px] min-h-12 px-6 py-3 text-base font-semibold rounded-xl border-none cursor-pointer bg-green-500 text-white hover:bg-green-600 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto min-w-[200px] py-3 px-4 rounded-lg font-bold text-base bg-slate-700 text-white hover:bg-slate-800 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
               onClick={startCall}
               disabled={!AGENT_ID}
             >
-              <span className="text-xl"></span>
               Start call
             </button>
           )}
           {(status === 'connecting' || status === 'connected') && (
             <button
               type="button"
-              className="flex items-center justify-center gap-2 w-full sm:w-auto min-w-[200px] min-h-12 px-6 py-3 text-base font-semibold rounded-xl border-none cursor-pointer bg-orange-600 text-white hover:bg-orange-700 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto min-w-[200px] py-3 px-4 rounded-lg font-bold text-base bg-slate-600 text-white hover:bg-slate-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer"
               onClick={endCall}
               disabled={status === 'connecting'}
             >
-              <span className="text-xl">📵</span>
               End call
             </button>
           )}
         </div>
-      </main>
+      </div>
 
-      {/* Transcript */}
-      <section className="mt-6 pt-4 border-t border-slate-200">
-        <h3 className="m-0 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Call log</h3>
-        <div
-          ref={transcriptScrollRef}
-          className="max-h-24 sm:max-h-32 overflow-y-auto text-xs leading-relaxed overscroll-contain rounded-lg bg-slate-50 p-3 border border-slate-200"
-        >
-          {transcript.length === 0 ? (
-            <p className="text-slate-400 italic m-0">
-              {status === 'idle' && 'Start a call to see the conversation.'}
-              {status === 'connecting' && 'Connecting…'}
-              {status === 'connected' && 'Conversation will appear here.'}
-              {status === 'error' && 'No messages.'}
-            </p>
-          ) : (
-            transcript.map((line, i) => (
-              <div key={i} className={`mb-1.5 last:mb-0 break-words ${i % 2 === 0 ? 'text-slate-800' : 'text-slate-600'}`}>
-                {line}
-              </div>
-            ))
-          )}
+      {/* Transcript - styled like form section */}
+      <section className="mt-4 sm:mt-6">
+        <div className="border p-5 border-gray-300 rounded-lg bg-white">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3">Call log</h3>
+          <div
+            ref={transcriptScrollRef}
+            className="max-h-24 sm:max-h-32 overflow-y-auto text-sm leading-relaxed overscroll-contain rounded-lg border border-gray-300 bg-gray-50 p-3"
+          >
+            {transcript.length === 0 ? (
+              <p className="text-gray-500 italic m-0">
+                {status === 'idle' && 'Start a call to see the conversation.'}
+                {status === 'connecting' && 'Connecting…'}
+                {status === 'connected' && 'Conversation will appear here.'}
+                {status === 'error' && 'No messages.'}
+              </p>
+            ) : (
+              transcript.map((line, i) => (
+                <div key={i} className={`mb-1.5 last:mb-0 wrap-break-word ${i % 2 === 0 ? 'text-gray-900' : 'text-gray-600'}`}>
+                  {line}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </section>
     </div>
